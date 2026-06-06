@@ -30,16 +30,17 @@
 ## 版本历史
 
 ### v0.2.1 (PATCH)
-- **状态**: 开发中 🏗️
+- **状态**: 已发布 ✅
 - **目标**: 代码重构与性能优化（无新功能）
 - **任务**:
-  - [ ] 提取 FavoriteToggleButton 公共组件，消除 SongTile / PlayerPage 中收藏按钮重复实现
-  - [ ] 抽出 PlayerPositionBuilder 公共组件，去除 MiniPlayer / PlayerPage 进度条嵌套 ValueListenableBuilder 重复
-  - [ ] PlayerProvider：新增 `playingListenable`，MiniPlayer / 播放控制改用 ValueListenable 避免暂停/播放时整页重建
-  - [ ] PlayerProvider：改进随机模式下一首质量（Fisher-Yates shuffle）
-  - [ ] LibraryProvider：缓存 `filtered` 搜索结果避免每次 build 重新过滤
-  - [ ] LibraryPage：合并 `_buildEmpty` / `_buildTabEmpty` 空态组件；移除搜索回调中多余的 `setState`
-  - [ ] 单测：LibraryProvider 搜索过滤、PlayerProvider 队列管理、Lyrics edge case
+  - [x] 提取 FavoriteToggleButton 公共组件，消除 SongTile / PlayerPage 中收藏按钮重复实现
+  - [x] 抽出 PlayerPositionBuilder / PlayingStateBuilder 公共组件，去除 MiniPlayer / PlayerPage 进度条嵌套 ValueListenableBuilder 重复
+  - [x] PlayerProvider：新增 `playingListenable`，MiniPlayer / 播放控制改用 ValueListenable 避免暂停/播放时整页重建
+  - [x] PlayerProvider：改进随机模式下一首质量（Fisher-Yates shuffle 生成完整下一轮顺序，一轮内每首歌只播一次）
+  - [x] PlayerProvider：用 StreamSubscription 列表管理流订阅，简化析构
+  - [x] LibraryProvider：缓存 `filtered` 搜索结果避免每次 build 重新过滤；trim 后等价的关键字不再重复 notify
+  - [x] LibraryPage：拆分 Tab 为独立 widget；合并 `_buildEmpty` / `_buildTabEmpty` 空态组件；搜索栏改用 controller 自身的 ValueListenable 触发清除按钮显隐，移除多余 `setState`
+  - [x] 单测：LibraryProvider 搜索过滤、LyricParser 边界（无时间戳行/负 offset/三位毫秒精度）
 
 ### v0.2.0 (MINOR)
 - **状态**: 已发布 ✅

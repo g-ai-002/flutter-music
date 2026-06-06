@@ -70,11 +70,9 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.2.1**：代码重构与性能优化（无新功能）。提取 FavoriteToggleButton 公共组件；抽出 PlayerPositionBuilder / PlayingStateBuilder，去除嵌套 ValueListenableBuilder 重复；PlayerProvider 新增 playingListenable 避免播放/暂停时整页重建；随机播放改为 Fisher-Yates 洗牌，一轮内每首歌只播一次；LibraryProvider 缓存 filtered 避免每次 build 重新过滤；LibraryPage 拆分 Tab 为独立 widget，统一空态组件；新增 LibraryProvider 搜索 / LyricParser 边界单测。
 - **v0.2.0**：嵌入式封面（无同目录封面时自动回退到 ID3/Vorbis 嵌入封面，带 LRU 缓存）；收藏 / 最近播放（音乐库新增「歌曲/收藏/最近」三个 Tab，歌曲行与大播放器加心形按钮，最近一键清空）；接入 `just_audio_background` 实现后台播放与通知栏元数据同步（标题/艺术家/专辑/封面）。
-- **v0.1.3**：重构优化（无新功能）。拆分播放进度高频流为 ValueListenable，列表/迷你播放器不再被 200ms 节奏触发重建；替换 withOpacity → withValues；CoverImage 去同步 IO + cacheWidth；公共 formatDuration 工具；扫描目录路径规范化去重。
-- **v0.1.2**：修复 v0.1.1 Android APK 构建失败（file_picker 11.x → 10.3.10）
-- **v0.1.1**：修复 v0.1.0 CI 报错（lint 规则、file_picker API、未使用字段清理）
-- **v0.1.0**：首个版本。最小可用：自定义扫描目录、播放、同目录封面、LRC 歌词滚动、日志系统、自适应布局、CI 出包。
+- **v0.1.x（v0.1.0 → v0.1.3）**：首个 MINOR 系列。v0.1.0 完成最小可用集（自定义扫描目录、播放、同目录封面、LRC 歌词滚动、日志、自适应布局、CI 出包）；v0.1.1/v0.1.2 修复 CI 与 Android 构建（lint 规则、file_picker API/版本兼容）；v0.1.3 重构优化（拆分高频播放进度流为 ValueListenable，列表/迷你播放器不再被 200ms 节奏触发重建；替换 withOpacity → withValues；CoverImage 去同步 IO + cacheWidth；扫描目录路径规范化去重）。
 
 更多详情见 [plan.md](./plan.md)。
 
