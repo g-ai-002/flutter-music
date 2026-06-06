@@ -6,7 +6,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.1.3';
+  static const String version = '0.2.0';
 
   // SharedPreferences keys
   static const String prefKeyDarkMode = 'dark_mode';
@@ -14,6 +14,8 @@ class AppConstants {
   static const String prefKeyLastSongPath = 'last_song_path';
   static const String prefKeyPlayMode = 'play_mode';
   static const String prefKeyVolume = 'volume';
+  static const String prefKeyFavorites = 'favorites_v1';
+  static const String prefKeyRecentPlays = 'recent_plays_v1';
 
   // 支持的音频后缀
   static const List<String> audioExtensions = [
@@ -28,6 +30,9 @@ class AppConstants {
 
   // 歌词扩展名
   static const String lrcExtension = '.lrc';
+
+  // 最近播放保留条数
+  static const int maxRecentPlays = 100;
 }
 
 /// 通用时长格式化：`mm:ss` 或 `h:mm:ss`
