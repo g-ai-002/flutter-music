@@ -28,8 +28,16 @@
 
 ## 版本历史
 
-### v0.1.1 (PATCH) — 当前开发版本
+### v0.1.2 (PATCH) — 当前开发版本
 - **状态**: 开发中 🔧
+- **目标**: 修复 v0.1.1 Android APK 构建失败
+- **任务**:
+  - [x] file_picker 11.0.2 → 10.3.10（11.x 在 Android 端缺失 FilePickerPlugin 类导致 `compileReleaseJavaWithJavac` 失败）
+  - [x] settings_page: 还原为 `FilePicker.platform.getDirectoryPath`
+  - [x] 版本号升至 0.1.2
+
+### v0.1.1 (PATCH)
+- **状态**: 已发布 ✅
 - **目标**: 修复 v0.1.0 的 CI 报错
 - **任务**:
   - [x] 修复 `FilePicker.platform.getDirectoryPath` → `FilePicker.getDirectoryPath`（file_picker 11.x API 变更）
