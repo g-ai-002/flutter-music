@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import '../models/lyric.dart';
 import '../models/song.dart';
 import '../services/log_service.dart';
@@ -75,6 +76,11 @@ class PlayerProvider extends ChangeNotifier {
     });
   }
 
+  /// 由外部注入：每次开始播放时回调（用于"最近播放"等横切关注点）
+  ///
+  /// 设计上让 PlayerProvider 不直接依赖 FavoritesProvider，便于单测。
+  void Function(Song song)? onSongStart;
+
   // ---- getters ----
   Song? get currentSong =>
       (_currentIndex >= 0 && _currentIndex < _queue.length) ? _queue[_currentIndex] : null;
@@ -122,12 +128,23 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> _prepare(Song song, {required bool autoPlay}) async {
     try {
       LogService.info('加载歌曲: ${song.path}');
-      await _player.setFilePath(song.path);
+      final source = AudioSource.uri(
+        Uri.file(song.path),
+        tag: MediaItem(
+          id: song.path,
+          title: song.title,
+          artist: song.artist,
+          album: song.album,
+          artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
+        ),
+      );
+      await _player.setAudioSource(source);
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
           : Lyrics.empty;
       if (autoPlay) await _player.play();
+      onSongStart?.call(song);
       notifyListeners();
     } catch (e, st) {
       LogService.error('加载歌曲失败: ${song.path}', e, st);

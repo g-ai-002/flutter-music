@@ -3,10 +3,12 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'pages/library_page.dart';
+import 'providers/favorites_provider.dart';
 import 'providers/library_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/settings_provider.dart';
@@ -39,6 +41,20 @@ Future<void> main() async {
   await LogService.init();
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
+  // 后台播放 / 通知栏（Android / iOS / macOS 支持，Windows 桌面端跳过）
+  if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+    try {
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.flutter.music.channel.audio',
+        androidNotificationChannelName: '音乐播放',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
+      );
+    } catch (e, st) {
+      LogService.error('初始化后台播放失败', e, st);
+    }
+  }
+
   try {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
@@ -66,9 +82,17 @@ class MusicApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider(storage)),
         ChangeNotifierProvider(create: (_) => LibraryProvider(storage)),
-        ChangeNotifierProxyProvider<SettingsProvider, PlayerProvider>(
-          create: (ctx) => PlayerProvider(storage, ctx.read<SettingsProvider>()),
-          update: (_, __, prev) => prev!,
+        ChangeNotifierProvider(create: (_) => FavoritesProvider(storage)),
+        ChangeNotifierProxyProvider2<SettingsProvider, FavoritesProvider,
+            PlayerProvider>(
+          create: (ctx) {
+            final p = PlayerProvider(storage, ctx.read<SettingsProvider>());
+            p.onSongStart = (song) {
+              ctx.read<FavoritesProvider>().recordPlay(song.path);
+            };
+            return p;
+          },
+          update: (_, __, ___, prev) => prev!,
         ),
       ],
       child: Consumer<SettingsProvider>(
