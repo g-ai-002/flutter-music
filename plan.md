@@ -29,6 +29,18 @@
 
 ## 版本历史
 
+### v0.2.1 (PATCH)
+- **状态**: 开发中 🏗️
+- **目标**: 代码重构与性能优化（无新功能）
+- **任务**:
+  - [ ] 提取 FavoriteToggleButton 公共组件，消除 SongTile / PlayerPage 中收藏按钮重复实现
+  - [ ] 抽出 PlayerPositionBuilder 公共组件，去除 MiniPlayer / PlayerPage 进度条嵌套 ValueListenableBuilder 重复
+  - [ ] PlayerProvider：新增 `playingListenable`，MiniPlayer / 播放控制改用 ValueListenable 避免暂停/播放时整页重建
+  - [ ] PlayerProvider：改进随机模式下一首质量（Fisher-Yates shuffle）
+  - [ ] LibraryProvider：缓存 `filtered` 搜索结果避免每次 build 重新过滤
+  - [ ] LibraryPage：合并 `_buildEmpty` / `_buildTabEmpty` 空态组件；移除搜索回调中多余的 `setState`
+  - [ ] 单测：LibraryProvider 搜索过滤、PlayerProvider 队列管理、Lyrics edge case
+
 ### v0.2.0 (MINOR)
 - **状态**: 已发布 ✅
 - **目标**: 嵌入式封面 + 收藏 / 最近播放 + 后台播放 & 通知栏
