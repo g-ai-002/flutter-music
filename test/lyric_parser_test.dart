@@ -68,5 +68,31 @@ void main() {
       final lyrics = LyricParser.parseText(text);
       expect(lyrics.lines.first.time, const Duration(milliseconds: 1500));
     });
+
+    test('ignores malformed/no-time-tag lines', () {
+      const text = '''
+no time tag line should be skipped
+[01:00.00]valid
+also no tag
+''';
+      final lyrics = LyricParser.parseText(text);
+      expect(lyrics.lines.length, 1);
+      expect(lyrics.lines.first.text, 'valid');
+    });
+
+    test('negative offset is supported', () {
+      const text = '''
+[offset:-500]
+[00:02.00]shifted
+''';
+      final lyrics = LyricParser.parseText(text);
+      expect(lyrics.lines.first.time, const Duration(milliseconds: 1500));
+    });
+
+    test('three-digit ms fraction parsed precisely', () {
+      const text = '[00:01.234]A\n';
+      final lyrics = LyricParser.parseText(text);
+      expect(lyrics.lines.first.time, const Duration(milliseconds: 1234));
+    });
   });
 }
