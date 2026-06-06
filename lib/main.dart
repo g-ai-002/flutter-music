@@ -11,6 +11,7 @@ import 'pages/library_page.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/library_provider.dart';
 import 'providers/player_provider.dart';
+import 'providers/playlists_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/log_service.dart';
 import 'services/storage_service.dart';
@@ -83,6 +84,7 @@ class MusicApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider(storage)),
         ChangeNotifierProvider(create: (_) => LibraryProvider(storage)),
         ChangeNotifierProvider(create: (_) => FavoritesProvider(storage)),
+        ChangeNotifierProvider(create: (_) => PlaylistsProvider(storage)),
         ChangeNotifierProxyProvider2<SettingsProvider, FavoritesProvider,
             PlayerProvider>(
           create: (ctx) {

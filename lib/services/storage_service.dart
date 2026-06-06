@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/playlist.dart';
 import '../models/song.dart';
 import '../utils/constants.dart';
 
@@ -92,4 +93,23 @@ class StorageService {
   // ---- 最近播放（绝对路径列表，头部=最近）----
   List<String> get recentPlays => _p.getStringList(AppConstants.prefKeyRecentPlays) ?? const [];
   Future<void> setRecentPlays(List<String> paths) => _p.setStringList(AppConstants.prefKeyRecentPlays, paths);
+
+  // ---- 歌单 ----
+  List<Playlist> loadPlaylists() {
+    final raw = _p.getString(AppConstants.prefKeyPlaylists);
+    if (raw == null) return const [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list
+          .map((e) => Playlist.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePlaylists(List<Playlist> playlists) async {
+    final json = jsonEncode(playlists.map((p) => p.toJson()).toList());
+    await _p.setString(AppConstants.prefKeyPlaylists, json);
+  }
 }

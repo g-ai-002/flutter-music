@@ -3,6 +3,7 @@ import '../models/song.dart';
 import '../utils/constants.dart';
 import 'cover_image.dart';
 import 'favorite_toggle_button.dart';
+import 'playlist_dialogs.dart';
 
 /// 歌曲列表行
 class SongTile extends StatelessWidget {
@@ -11,6 +12,7 @@ class SongTile extends StatelessWidget {
   final bool playing;
   final VoidCallback onTap;
   final bool showFavorite;
+  final VoidCallback? onRemove;
 
   const SongTile({
     super.key,
@@ -19,6 +21,7 @@ class SongTile extends StatelessWidget {
     required this.playing,
     required this.onTap,
     this.showFavorite = false,
+    this.onRemove,
   });
 
   @override
@@ -78,9 +81,54 @@ class SongTile extends StatelessWidget {
                 iconSize: 20,
                 compact: true,
               ),
+            _MoreMenu(song: song, onRemove: onRemove),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MoreMenu extends StatelessWidget {
+  final Song song;
+  final VoidCallback? onRemove;
+  const _MoreMenu({required this.song, this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: '更多',
+      icon: const Icon(Icons.more_vert, size: 20),
+      padding: EdgeInsets.zero,
+      onSelected: (v) async {
+        switch (v) {
+          case 'add':
+            await showAddToPlaylistSheet(context, songPaths: [song.path]);
+            break;
+          case 'remove':
+            onRemove?.call();
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'add',
+          child: ListTile(
+            dense: true,
+            leading: Icon(Icons.playlist_add),
+            title: Text('添加到歌单'),
+          ),
+        ),
+        if (onRemove != null)
+          const PopupMenuItem(
+            value: 'remove',
+            child: ListTile(
+              dense: true,
+              leading: Icon(Icons.remove_circle_outline),
+              title: Text('从此处移除'),
+            ),
+          ),
+      ],
     );
   }
 }

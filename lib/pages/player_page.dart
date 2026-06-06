@@ -6,6 +6,7 @@ import '../widgets/cover_image.dart';
 import '../widgets/favorite_toggle_button.dart';
 import '../widgets/lyric_view.dart';
 import '../widgets/player_listenables.dart';
+import '../widgets/playlist_dialogs.dart';
 
 /// 大播放器页（封面 + 歌词 + 控制条）
 class PlayerPage extends StatelessWidget {
@@ -123,6 +124,14 @@ class _SongInfo extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   FavoriteToggleButton(songPath: s.path),
+                  IconButton(
+                    tooltip: '添加到歌单',
+                    icon: const Icon(Icons.playlist_add),
+                    onPressed: () => showAddToPlaylistSheet(
+                      context,
+                      songPaths: [s.path],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),

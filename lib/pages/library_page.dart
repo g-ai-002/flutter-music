@@ -4,12 +4,15 @@ import '../models/song.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/library_provider.dart';
 import '../providers/player_provider.dart';
+import '../providers/playlists_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/mini_player.dart';
+import '../widgets/playlist_dialogs.dart';
 import '../widgets/song_tile.dart';
+import 'playlist_page.dart';
 import 'settings_page.dart';
 
-/// 歌曲库主页（默认页），带 Tab：歌曲 / 收藏 / 最近
+/// 歌曲库主页（默认页），带 Tab：歌曲 / 收藏 / 最近 / 歌单
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
 
@@ -25,7 +28,7 @@ class _LibraryPageState extends State<LibraryPage>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -80,12 +83,20 @@ class _LibraryPageState extends State<LibraryPage>
             Tab(text: '歌曲'),
             Tab(text: '收藏'),
             Tab(text: '最近'),
+            Tab(text: '歌单'),
           ],
         ),
       ),
       body: Column(
         children: [
-          _SearchBar(controller: _searchCtrl),
+          ListenableBuilder(
+            listenable: _tabCtrl,
+            builder: (context, _) {
+              // 歌单 Tab 隐藏搜索框（歌单本身较少，无需搜索）
+              if (_tabCtrl.index == 3) return const SizedBox.shrink();
+              return _SearchBar(controller: _searchCtrl);
+            },
+          ),
           const _ScanStatusBar(),
           Expanded(
             child: TabBarView(
@@ -94,6 +105,7 @@ class _LibraryPageState extends State<LibraryPage>
                 _SongTab(),
                 _FavoriteTab(),
                 _RecentTab(),
+                _PlaylistTab(),
               ],
             ),
           ),
@@ -366,6 +378,128 @@ class _SongListView extends StatelessWidget {
               showFavorite: true,
             );
           },
+        );
+      },
+    );
+  }
+}
+
+/// 歌单 Tab：列表 + 新建按钮 + 长按重命名/删除
+class _PlaylistTab extends StatelessWidget {
+  const _PlaylistTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<PlaylistsProvider>(
+      builder: (context, prov, _) {
+        final items = prov.items;
+        return Stack(
+          children: [
+            if (items.isEmpty)
+              const _EmptyState(
+                icon: Icons.queue_music,
+                title: '还没有歌单',
+                subtitle: '点击右下角「+」新建第一个歌单',
+              )
+            else
+              ListView.separated(
+                padding: const EdgeInsets.only(bottom: 88),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 72),
+                itemBuilder: (context, i) {
+                  final pl = items[i];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.queue_music,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    title: Text(pl.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text('${pl.songCount} 首'),
+                    trailing: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (v) async {
+                        switch (v) {
+                          case 'rename':
+                            final name = await showPlaylistNameDialog(
+                              context,
+                              initial: pl.name,
+                              title: '重命名歌单',
+                            );
+                            if (name == null) return;
+                            try {
+                              await prov.rename(pl.id, name);
+                            } on ArgumentError catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.message.toString())),
+                              );
+                            }
+                            break;
+                          case 'delete':
+                            final ok = await confirmDeletePlaylist(context, pl);
+                            if (ok) await prov.remove(pl.id);
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: ListTile(
+                            dense: true,
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('重命名'),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            dense: true,
+                            leading: Icon(Icons.delete_outline),
+                            title: Text('删除'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PlaylistPage(playlistId: pl.id),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton(
+                heroTag: 'new-playlist',
+                tooltip: '新建歌单',
+                onPressed: () async {
+                  final name = await showPlaylistNameDialog(
+                    context,
+                    title: '新建歌单',
+                  );
+                  if (name == null) return;
+                  try {
+                    await prov.create(name);
+                  } on ArgumentError catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.message.toString())),
+                    );
+                  }
+                },
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ],
         );
       },
     );

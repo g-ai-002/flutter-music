@@ -17,7 +17,7 @@
 - [x] 嵌入式封面（ID3/Vorbis APIC）展示
 - [x] 收藏 / 最近播放
 - [x] 后台播放 + 通知栏控制（just_audio_background）
-- [ ] 歌单（用户自建）
+- [x] 歌单（用户自建）
 - [ ] 均衡器 / 倍速播放
 - [ ] 音频可视化（频谱）
 - [ ] 自适应布局（折叠屏/平板/桌面）进一步打磨
@@ -28,6 +28,20 @@
 ---
 
 ## 版本历史
+
+### v0.3.0 (MINOR)
+- **状态**: 开发中 🚧
+- **目标**: 用户自建歌单（创建 / 重命名 / 删除 / 增删歌曲 / 一键播放）
+- **任务**:
+  - [x] 数据模型 `Playlist`（id、name、songPaths、createdAt、updatedAt），JSON 序列化
+  - [x] StorageService 扩展：`loadPlaylists` / `savePlaylists`（独立 key `playlists_v1`）
+  - [x] `PlaylistsProvider`：创建 / 重命名 / 删除歌单，添加 / 移除 / 重排歌曲，重名校验
+  - [x] 音乐库新增「歌单」Tab：列表 + 新建按钮 + 长按重命名/删除
+  - [x] 歌单详情页 `PlaylistPage`：歌曲列表 + 顶部「播放全部」+ 单曲移除 + 空态引导
+  - [x] 「歌曲 / 收藏 / 最近」行尾溢出菜单：添加到歌单（含「新建歌单」）；大播放器追加同入口
+  - [x] main 注册 `PlaylistsProvider`
+  - [x] 单元测试：Playlist 序列化、PlaylistsProvider CRUD / 重名 / 持久化
+  - [x] README / 版本号 0.3.0
 
 ### v0.2.1 (PATCH)
 - **状态**: 已发布 ✅

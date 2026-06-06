@@ -7,6 +7,7 @@
 - 🖼️ 同目录封面（`cover.jpg/png`、`folder.jpg/png`、`album.jpg/png` 等），无封面文件时自动回退到嵌入式封面（ID3 APIC / Vorbis APIC）
 - 📝 同名 LRC 歌词解析、居中滚动高亮
 - ❤️ 收藏 / 最近播放，独立 Tab 查看
+- 🎶 自建歌单（新建 / 重命名 / 删除，单曲添加到歌单，歌单一键播放全部）
 - 🔔 后台播放与通知栏控制（Android 锁屏/通知栏可控制上一首 / 暂停 / 下一首）
 - 🔁 列表循环 / 单曲循环 / 随机播放
 - 🌗 浅色 / 深色主题
@@ -70,6 +71,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.3.0**：用户自建歌单。新增「歌单」Tab，支持新建 / 重命名 / 删除（删除歌单不会删除磁盘上的歌曲）；歌曲行尾「…」菜单 / 大播放器新增「添加到歌单」入口，可直接选择已有歌单或现场新建；歌单详情页支持「播放全部」、单曲移除、失效曲目计数提示。歌单以歌曲绝对路径引用，独立于歌曲库缓存，重新扫描后引用关系保持不变。
 - **v0.2.1**：代码重构与性能优化（无新功能）。提取 FavoriteToggleButton 公共组件；抽出 PlayerPositionBuilder / PlayingStateBuilder，去除嵌套 ValueListenableBuilder 重复；PlayerProvider 新增 playingListenable 避免播放/暂停时整页重建；随机播放改为 Fisher-Yates 洗牌，一轮内每首歌只播一次；LibraryProvider 缓存 filtered 避免每次 build 重新过滤；LibraryPage 拆分 Tab 为独立 widget，统一空态组件；新增 LibraryProvider 搜索 / LyricParser 边界单测。
 - **v0.2.0**：嵌入式封面（无同目录封面时自动回退到 ID3/Vorbis 嵌入封面，带 LRU 缓存）；收藏 / 最近播放（音乐库新增「歌曲/收藏/最近」三个 Tab，歌曲行与大播放器加心形按钮，最近一键清空）；接入 `just_audio_background` 实现后台播放与通知栏元数据同步（标题/艺术家/专辑/封面）。
 - **v0.1.x（v0.1.0 → v0.1.3）**：首个 MINOR 系列。v0.1.0 完成最小可用集（自定义扫描目录、播放、同目录封面、LRC 歌词滚动、日志、自适应布局、CI 出包）；v0.1.1/v0.1.2 修复 CI 与 Android 构建（lint 规则、file_picker API/版本兼容）；v0.1.3 重构优化（拆分高频播放进度流为 ValueListenable，列表/迷你播放器不再被 200ms 节奏触发重建；替换 withOpacity → withValues；CoverImage 去同步 IO + cacheWidth；扫描目录路径规范化去重）。
