@@ -84,4 +84,12 @@ class StorageService {
     final json = jsonEncode(songs.map((s) => s.toJson()).toList());
     await _p.setString(_kSongs, json);
   }
+
+  // ---- 收藏（歌曲绝对路径集合）----
+  List<String> get favorites => _p.getStringList(AppConstants.prefKeyFavorites) ?? const [];
+  Future<void> setFavorites(List<String> paths) => _p.setStringList(AppConstants.prefKeyFavorites, paths);
+
+  // ---- 最近播放（绝对路径列表，头部=最近）----
+  List<String> get recentPlays => _p.getStringList(AppConstants.prefKeyRecentPlays) ?? const [];
+  Future<void> setRecentPlays(List<String> paths) => _p.setStringList(AppConstants.prefKeyRecentPlays, paths);
 }

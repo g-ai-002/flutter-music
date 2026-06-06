@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/song.dart';
+import '../providers/favorites_provider.dart';
 import '../utils/constants.dart';
 import 'cover_image.dart';
 
@@ -9,6 +11,7 @@ class SongTile extends StatelessWidget {
   final bool active;
   final bool playing;
   final VoidCallback onTap;
+  final bool showFavorite;
 
   const SongTile({
     super.key,
@@ -16,6 +19,7 @@ class SongTile extends StatelessWidget {
     required this.active,
     required this.playing,
     required this.onTap,
+    this.showFavorite = false,
   });
 
   @override
@@ -69,6 +73,21 @@ class SongTile extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
             ],
+            if (showFavorite)
+              Selector<FavoritesProvider, bool>(
+                selector: (_, fav) => fav.isFavorite(song.path),
+                builder: (context, fav, _) => IconButton(
+                  tooltip: fav ? '取消收藏' : '收藏',
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    fav ? Icons.favorite : Icons.favorite_outline,
+                    color: fav ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () =>
+                      context.read<FavoritesProvider>().toggleFavorite(song.path),
+                ),
+              ),
           ],
         ),
       ),

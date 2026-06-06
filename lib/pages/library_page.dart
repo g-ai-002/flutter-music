@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/song.dart';
+import '../providers/favorites_provider.dart';
 import '../providers/library_provider.dart';
 import '../providers/player_provider.dart';
 import '../providers/settings_provider.dart';
@@ -7,7 +9,7 @@ import '../widgets/mini_player.dart';
 import '../widgets/song_tile.dart';
 import 'settings_page.dart';
 
-/// 歌曲库主页（默认页）
+/// 歌曲库主页（默认页），带 Tab：歌曲 / 收藏 / 最近
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
 
@@ -15,11 +17,20 @@ class LibraryPage extends StatefulWidget {
   State<LibraryPage> createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> {
+class _LibraryPageState extends State<LibraryPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
   final TextEditingController _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 3, vsync: this);
+  }
+
+  @override
   void dispose() {
+    _tabCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -31,6 +42,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('音乐库'),
@@ -59,13 +71,32 @@ class _LibraryPageState extends State<LibraryPage> {
             },
           ),
         ],
+        bottom: TabBar(
+          controller: _tabCtrl,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
+          tabs: const [
+            Tab(text: '歌曲'),
+            Tab(text: '收藏'),
+            Tab(text: '最近'),
+          ],
+        ),
       ),
       body: Column(
         children: [
           _buildSearchBar(context),
           _buildScanStatus(context),
-          const Divider(height: 0.5),
-          Expanded(child: _buildList(context)),
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                _buildSongTab(context),
+                _buildFavTab(context),
+                _buildRecentTab(context),
+              ],
+            ),
+          ),
           const MiniPlayer(),
         ],
       ),
@@ -128,34 +159,111 @@ class _LibraryPageState extends State<LibraryPage> {
     return '…${d.substring(d.length - 48)}';
   }
 
-  Widget _buildList(BuildContext context) {
+  // ---- 歌曲 Tab ----
+  Widget _buildSongTab(BuildContext context) {
     return Consumer<LibraryProvider>(
       builder: (context, lib, _) {
         final list = lib.filtered;
         if (list.isEmpty) {
           return _buildEmpty(context, lib);
         }
-        return Selector<PlayerProvider, ({String? path, bool playing})>(
-          selector: (_, p) => (path: p.currentSong?.path, playing: p.playing),
-          builder: (context, snap, _) {
-            return ListView.separated(
-              padding: EdgeInsets.zero,
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 76),
-              itemBuilder: (context, i) {
-                final s = list[i];
-                final active = snap.path == s.path;
-                return SongTile(
-                  song: s,
-                  active: active,
-                  playing: snap.playing,
-                  onTap: () async {
-                    final player = context.read<PlayerProvider>();
-                    await player.setQueue(list);
-                    await player.playSong(s);
-                  },
-                );
+        return _songList(list);
+      },
+    );
+  }
+
+  // ---- 收藏 Tab ----
+  Widget _buildFavTab(BuildContext context) {
+    return Consumer2<LibraryProvider, FavoritesProvider>(
+      builder: (context, lib, fav, _) {
+        final favPaths = fav.favorites;
+        if (favPaths.isEmpty) {
+          return _buildTabEmpty('还没有收藏的歌曲', '点击歌曲旁的 ♡ 按钮收藏');
+        }
+        final list =
+            lib.songs.where((s) => favPaths.contains(s.path)).toList();
+        if (list.isEmpty) {
+          return _buildTabEmpty('收藏的歌曲已被移除', '请重新扫描');
+        }
+        return _songList(list);
+      },
+    );
+  }
+
+  // ---- 最近 Tab ----
+  Widget _buildRecentTab(BuildContext context) {
+    return Consumer2<LibraryProvider, FavoritesProvider>(
+      builder: (context, lib, fav, _) {
+        final recentPaths = fav.recent;
+        if (recentPaths.isEmpty) {
+          return _buildTabEmpty('还没有播放记录', '播放歌曲后将出现在这里');
+        }
+        final list = <Song>[];
+        final songMap = {for (final s in lib.songs) s.path: s};
+        for (final p in recentPaths) {
+          final s = songMap[p];
+          if (s != null) list.add(s);
+        }
+        return Stack(
+          children: [
+            _songList(list),
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: FloatingActionButton.small(
+                heroTag: 'clear-recent',
+                tooltip: '清空最近播放',
+                onPressed: () => context.read<FavoritesProvider>().clearRecent(),
+                child: const Icon(Icons.delete_outline),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTabEmpty(String title, String subtitle) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.favorite_outline,
+              size: 48, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text(title, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(subtitle,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _songList(List<Song> list) {
+    return Selector<PlayerProvider, ({String? path, bool playing})>(
+      selector: (_, p) => (path: p.currentSong?.path, playing: p.playing),
+      builder: (context, snap, _) {
+        return ListView.separated(
+          padding: EdgeInsets.zero,
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 76),
+          itemBuilder: (context, i) {
+            final s = list[i];
+            final active = snap.path == s.path;
+            return SongTile(
+              song: s,
+              active: active,
+              playing: snap.playing,
+              onTap: () async {
+                final player = context.read<PlayerProvider>();
+                await player.setQueue(
+                    context.read<LibraryProvider>().songs);
+                await player.playSong(s);
               },
+              showFavorite: true,
             );
           },
         );

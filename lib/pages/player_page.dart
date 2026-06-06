@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/favorites_provider.dart';
 import '../providers/player_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/cover_image.dart';
@@ -102,12 +103,35 @@ class PlayerPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
           child: Column(
             children: [
-              Text(
-                s.title,
-                style: theme.textTheme.titleLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      s.title,
+                      style: theme.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Selector<FavoritesProvider, bool>(
+                    selector: (_, fav) => fav.isFavorite(s.path),
+                    builder: (context, fav, _) => IconButton(
+                      tooltip: fav ? '取消收藏' : '收藏',
+                      icon: Icon(
+                        fav ? Icons.favorite : Icons.favorite_outline,
+                        color: fav
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () => context
+                          .read<FavoritesProvider>()
+                          .toggleFavorite(s.path),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
