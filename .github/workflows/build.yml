@@ -1,0 +1,226 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  FLUTTER_VERSION: '3.44.1'
+  APP_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    name: Prepare package metadata
+    outputs:
+      app_version: ${{ steps.version.outputs.jversion }}
+      project_name: ${{ steps.project.outputs.project_name }}
+    steps:
+      - name: Prepare package version
+        id: version
+        shell: bash
+        run: |
+          jversion="0.1.0"
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            raw_tag="${{ github.ref_name }}"
+            version=$(echo "$raw_tag" | sed -E 's/^[vV]//')
+            jversion=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')
+            if [ -z "$jversion" ]; then
+              jversion="0.1.0"
+            fi
+          fi
+          echo "jversion=$jversion" >> $GITHUB_OUTPUT
+          echo "Using version: $jversion"
+
+      - name: Compute project name
+        id: project
+        shell: bash
+        run: |
+          projectName=$(echo "${{ env.APP_NAME }}" | tr '-' '_')
+          echo "project_name=$projectName" >> $GITHUB_OUTPUT
+          echo "Project name for Flutter: $projectName"
+
+  test:
+    needs: [ metadata ]
+    runs-on: ubuntu-latest
+    name: Run Dart tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+  build-android:
+    needs: [ metadata, test ]
+    runs-on: ubuntu-latest
+    name: Build Android APK
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Rename Android APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          retention-days: 1
+
+  build-windows:
+    needs: [ metadata, test ]
+    runs-on: windows-latest
+    name: Build Windows EXE
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Print environment info
+        shell: pwsh
+        run: |
+          Write-Host "OS: $($env:OS) $($env:PROCESSOR_ARCHITECTURE)"
+          flutter --version
+
+      - name: Generate Windows platform files
+        run: flutter create --platforms=windows --project-name ${{ needs.metadata.outputs.project_name }} .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: List build output
+        shell: pwsh
+        run: |
+          $releaseDir = 'build\windows\x64\runner\Release'
+          if (Test-Path $releaseDir) {
+            Get-ChildItem $releaseDir | ForEach-Object {
+              $sizeMB = [math]::Round($_.Length / 1MB, 2)
+              Write-Host "  $($_.Name)  ($sizeMB MB)"
+            }
+            $totalMB = [math]::Round((Get-ChildItem $releaseDir | Measure-Object Length -Sum).Sum / 1MB, 2)
+            Write-Host "  Total: $totalMB MB"
+          } else {
+            Write-Host "Release dir missing"
+            exit 1
+          }
+
+      - name: Create Windows ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath windows.zip
+          $zipSizeMB = [math]::Round((Get-Item windows.zip).Length / 1MB, 2)
+          Write-Host "ZIP size: $zipSizeMB MB"
+
+      - name: Rename Windows ZIP
+        run: |
+          mv windows.zip ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+          retention-days: 1
+
+  release:
+    needs: [ build-android, build-windows ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release
+
+    steps:
+      - name: Checkout code (for changelog)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          current_tag=${GITHUB_REF#refs/tags/}
+          prev_tag=$(git tag --sort=-version:refname | grep -v "^$current_tag$" | head -1)
+          body_content=""
+          if [[ -n "$prev_tag" ]]; then
+            body_content=$(git log --pretty=format:"* %s (%h)" "$prev_tag".."$current_tag" -- . ":(exclude)docs" ":(exclude).github")
+          else
+            body_content="Initial release."
+          fi
+          {
+            echo "body<<EOF"
+            echo "$body_content"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/*
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

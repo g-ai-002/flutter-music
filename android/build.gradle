@@ -1,0 +1,21 @@
+allprojects {
+    repositories {
+        if (System.getenv('USE_ALIYUN_MAVEN') == 'true') {
+            maven { url 'https://maven.aliyun.com/repository/public' }
+        }
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

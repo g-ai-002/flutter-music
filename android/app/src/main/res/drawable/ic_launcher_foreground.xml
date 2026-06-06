@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 音符头 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,40m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+    <!-- 音符杆 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,40v28h-4v-28z"/>
+    <!-- 第二个音符头 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,66m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0"/>
+    <!-- 第二个音符杆 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M49,40v26h-4v-26z"/>
+    <!-- 横连线 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M45,38h25v4h-25z"/>
+</vector>
