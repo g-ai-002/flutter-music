@@ -23,25 +23,30 @@ PlayMode playModeFromInt(int i) {
 }
 
 /// 音频播放状态
+///
+/// 设计上对高频信号做了拆分：
+/// - 选歌/播放状态/歌词等"低频"变化通过 [notifyListeners] 通知整个订阅者；
+/// - 播放进度 [positionListenable] / 总时长 [durationListenable]
+///   作为独立 ValueListenable 暴露，仅由播放器控件 / 歌词视图订阅，
+///   避免每 200ms 触发整个音乐库列表重建。
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   final StorageService _storage;
   final SettingsProvider _settings;
 
-  /// 当前播放队列（即库内的过滤结果或全量）
   List<Song> _queue = const [];
   int _currentIndex = -1;
 
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
+  final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
+  final ValueNotifier<Duration> _duration = ValueNotifier(Duration.zero);
   bool _playing = false;
   Lyrics _lyrics = Lyrics.empty;
 
-  late StreamSubscription _posSub;
-  late StreamSubscription _durSub;
-  late StreamSubscription _stateSub;
-  late StreamSubscription _completeSub;
-  late VoidCallback _settingsListener;
+  late final StreamSubscription _posSub;
+  late final StreamSubscription _durSub;
+  late final StreamSubscription _stateSub;
+  late final StreamSubscription _completeSub;
+  late final VoidCallback _settingsListener;
 
   final Random _random = Random();
 
@@ -53,14 +58,13 @@ class PlayerProvider extends ChangeNotifier {
     _settings.addListener(_settingsListener);
 
     _posSub = _player.positionStream.listen((p) {
-      _position = p;
-      notifyListeners();
+      _position.value = p;
     });
     _durSub = _player.durationStream.listen((d) {
-      _duration = d ?? Duration.zero;
-      notifyListeners();
+      _duration.value = d ?? Duration.zero;
     });
     _stateSub = _player.playingStream.listen((p) {
+      if (_playing == p) return;
       _playing = p;
       notifyListeners();
     });
@@ -75,8 +79,13 @@ class PlayerProvider extends ChangeNotifier {
   Song? get currentSong =>
       (_currentIndex >= 0 && _currentIndex < _queue.length) ? _queue[_currentIndex] : null;
   bool get playing => _playing;
-  Duration get position => _position;
-  Duration get duration => _duration;
+
+  /// 高频位置流，订阅者只重建控件本体
+  ValueListenable<Duration> get positionListenable => _position;
+  ValueListenable<Duration> get durationListenable => _duration;
+
+  Duration get position => _position.value;
+  Duration get duration => _duration.value;
   Lyrics get lyrics => _lyrics;
   PlayMode get mode => playModeFromInt(_settings.playMode);
   List<Song> get queue => _queue;
@@ -102,7 +111,6 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> playSong(Song song) async {
     final idx = _queue.indexWhere((s) => s.path == song.path);
     if (idx < 0) {
-      // 不在队列里也单独播放
       _queue = [..._queue, song];
       _currentIndex = _queue.length - 1;
     } else {
@@ -135,27 +143,25 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> seek(Duration to) async {
-    await _player.seek(to);
-  }
+  Future<void> seek(Duration to) => _player.seek(to);
 
   Future<void> next() async {
     if (_queue.isEmpty) return;
-    final mode = this.mode;
-    int next;
-    if (mode == PlayMode.shuffle) {
+    final m = mode;
+    int idx;
+    if (m == PlayMode.shuffle) {
       if (_queue.length == 1) {
-        next = 0;
+        idx = 0;
       } else {
         do {
-          next = _random.nextInt(_queue.length);
-        } while (next == _currentIndex);
+          idx = _random.nextInt(_queue.length);
+        } while (idx == _currentIndex);
       }
     } else {
-      next = (_currentIndex + 1) % _queue.length;
+      idx = (_currentIndex + 1) % _queue.length;
     }
-    _currentIndex = next;
-    await _prepare(_queue[next], autoPlay: true);
+    _currentIndex = idx;
+    await _prepare(_queue[idx], autoPlay: true);
   }
 
   Future<void> previous() async {
@@ -166,7 +172,6 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void _onCompleted() {
-    final mode = this.mode;
     if (mode == PlayMode.single) {
       _player.seek(Duration.zero);
       _player.play();
@@ -187,6 +192,8 @@ class PlayerProvider extends ChangeNotifier {
     _durSub.cancel();
     _stateSub.cancel();
     _completeSub.cancel();
+    _position.dispose();
+    _duration.dispose();
     _player.dispose();
     super.dispose();
   }

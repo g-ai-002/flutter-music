@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/song.dart';
+import '../utils/constants.dart';
 import 'cover_image.dart';
 
 /// 歌曲列表行
@@ -56,7 +57,7 @@ class SongTile extends StatelessWidget {
             if (song.duration != null) ...[
               const SizedBox(width: 8),
               Text(
-                _fmt(song.duration!),
+                formatDuration(song.duration!),
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -72,12 +73,5 @@ class SongTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final h = d.inHours;
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 }

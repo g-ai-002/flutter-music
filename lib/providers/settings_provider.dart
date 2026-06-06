@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../services/storage_service.dart';
+import '../utils/constants.dart';
 
 /// 应用设置：主题、扫描目录、播放模式、音量
 class SettingsProvider extends ChangeNotifier {
   final StorageService _storage;
   SettingsProvider(this._storage) {
     _darkMode = _storage.darkMode;
-    _scanDirs = List<String>.from(_storage.scanDirs);
+    _scanDirs = _storage.scanDirs.map(normalizeDirPath).where((s) => s.isNotEmpty).toSet().toList();
     _playMode = _storage.playMode.clamp(0, 2);
     _volume = _storage.volume;
   }
@@ -29,15 +30,17 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> addScanDir(String dir) async {
-    if (dir.isEmpty || _scanDirs.contains(dir)) return;
-    _scanDirs = [..._scanDirs, dir];
+    final normalized = normalizeDirPath(dir);
+    if (normalized.isEmpty || _scanDirs.contains(normalized)) return;
+    _scanDirs = [..._scanDirs, normalized];
     await _storage.setScanDirs(_scanDirs);
     notifyListeners();
   }
 
   Future<void> removeScanDir(String dir) async {
-    if (!_scanDirs.contains(dir)) return;
-    _scanDirs = _scanDirs.where((d) => d != dir).toList();
+    final normalized = normalizeDirPath(dir);
+    if (!_scanDirs.contains(normalized)) return;
+    _scanDirs = _scanDirs.where((d) => d != normalized).toList();
     await _storage.setScanDirs(_scanDirs);
     notifyListeners();
   }

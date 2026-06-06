@@ -28,6 +28,19 @@
 
 ## 版本历史
 
+### v0.1.3 (PATCH)
+- **状态**: 开发中 🚧
+- **目标**: 代码重构与性能优化（无新功能）
+- **任务**:
+  - [x] 拆分播放进度高频流为 `ValueListenable<Duration>`，避免每 200ms 触发音乐库列表 / MiniPlayer / 整页重建
+  - [x] `MiniPlayer` / 大播放器进度条 / `LyricView` 改为订阅 positionListenable
+  - [x] 替换已废弃的 `Color.withOpacity` → `withValues(alpha:)`
+  - [x] `CoverImage` 去除 build 中的同步 IO（`existsSync`），新增 `cacheWidth/cacheHeight` 限制位图解码尺寸
+  - [x] 公共 `formatDuration` 工具，去除 `player_page` / `song_tile` 重复实现
+  - [x] 扫描目录路径规范化（trim + 去末尾分隔符 + 去重），避免同一目录多种表示重复添加
+  - [x] 移除未使用的 `fileExistsSync` 工具及多余 `dart:io` 导入
+  - [x] 单测新增：`formatDuration`、`normalizeDirPath`
+
 ### v0.1.2 (PATCH)
 - **状态**: 已发布 ✅
 - **目标**: 修复 v0.1.1 Android APK 构建失败

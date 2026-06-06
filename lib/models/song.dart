@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:path/path.dart' as p;
 
 /// 歌曲数据模型
@@ -89,14 +88,4 @@ class Song {
 
   @override
   int get hashCode => path.hashCode;
-}
-
-/// 同步检查文件存在
-bool fileExistsSync(String? path) {
-  if (path == null || path.isEmpty) return false;
-  try {
-    return File(path).existsSync();
-  } catch (_) {
-    return false;
-  }
 }

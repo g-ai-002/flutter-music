@@ -127,7 +127,7 @@ ThemeData _buildBase({
         fontWeight: FontWeight.w600,
       ),
       unselectedLabelTextStyle: TextStyle(color: onSurfaceVariant, fontSize: 12),
-      indicatorColor: colorScheme.primary.withOpacity(0.12),
+      indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
     ),
     dividerTheme: DividerThemeData(color: outline, thickness: 0.5, space: 0.5),
     listTileTheme: ListTileThemeData(

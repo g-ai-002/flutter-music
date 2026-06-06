@@ -50,10 +50,10 @@ class _LyricViewState extends State<LyricView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer<PlayerProvider>(
-      builder: (context, player, _) {
-        final Lyrics lyrics = player.lyrics;
-
+    // 歌词内容（行集合）随歌曲切换变更：用 Selector 取一次，避免位置流更新触发整体重建
+    return Selector<PlayerProvider, Lyrics>(
+      selector: (_, p) => p.lyrics,
+      builder: (context, lyrics, _) {
         if (lyrics.isEmpty) {
           return Center(
             child: Text(
@@ -64,50 +64,54 @@ class _LyricViewState extends State<LyricView> {
             ),
           );
         }
-
-        final activeIndex = lyrics.indexAt(player.position);
+        final player = context.read<PlayerProvider>();
         return LayoutBuilder(
           builder: (context, constraints) {
-            // 推迟到下一帧再滚动，避免在 build 中调用
-            if (activeIndex != _lastIndex) {
-              _lastIndex = activeIndex;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && activeIndex >= 0) {
-                  _scrollTo(activeIndex, constraints.maxHeight);
-                }
-              });
-            }
             final topPad = constraints.maxHeight / 2 - widget.lineHeight / 2;
-            return ListView.builder(
-              controller: _ctrl,
-              padding: EdgeInsets.only(top: topPad, bottom: topPad),
-              itemCount: lyrics.lines.length,
-              itemBuilder: (context, i) {
-                final line = lyrics.lines[i];
-                final isActive = i == activeIndex;
-                return SizedBox(
-                  height: widget.lineHeight,
-                  child: Padding(
-                    padding: widget.padding,
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 220),
-                      style: TextStyle(
-                        color: isActive
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                        fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                        height: 1.4,
+            return ValueListenableBuilder<Duration>(
+              valueListenable: player.positionListenable,
+              builder: (context, pos, _) {
+                final activeIndex = lyrics.indexAt(pos);
+                if (activeIndex != _lastIndex) {
+                  _lastIndex = activeIndex;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && activeIndex >= 0) {
+                      _scrollTo(activeIndex, constraints.maxHeight);
+                    }
+                  });
+                }
+                return ListView.builder(
+                  controller: _ctrl,
+                  padding: EdgeInsets.only(top: topPad, bottom: topPad),
+                  itemCount: lyrics.lines.length,
+                  itemBuilder: (context, i) {
+                    final line = lyrics.lines[i];
+                    final isActive = i == activeIndex;
+                    return SizedBox(
+                      height: widget.lineHeight,
+                      child: Padding(
+                        padding: widget.padding,
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 220),
+                          style: TextStyle(
+                            color: isActive
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
+                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                            height: 1.4,
+                          ),
+                          textAlign: widget.textAlign,
+                          child: Text(
+                            line.text.isEmpty ? '·' : line.text,
+                            textAlign: widget.textAlign,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                      textAlign: widget.textAlign,
-                      child: Text(
-                        line.text.isEmpty ? '·' : line.text,
-                        textAlign: widget.textAlign,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             );

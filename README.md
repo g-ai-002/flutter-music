@@ -68,6 +68,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.1.3**：重构优化（无新功能）。拆分播放进度高频流为 ValueListenable，列表/迷你播放器不再被 200ms 节奏触发重建；替换 withOpacity → withValues；CoverImage 去同步 IO + cacheWidth；公共 formatDuration 工具；扫描目录路径规范化去重。
 - **v0.1.2**：修复 v0.1.1 Android APK 构建失败（file_picker 11.x → 10.3.10）
 - **v0.1.1**：修复 v0.1.0 CI 报错（lint 规则、file_picker API、未使用字段清理）
 - **v0.1.0**：首个版本。最小可用：自定义扫描目录、播放、同目录封面、LRC 歌词滚动、日志系统、自适应布局、CI 出包。

@@ -15,8 +15,6 @@ class MiniPlayer extends StatelessWidget {
       builder: (context, player, _) {
         final song = player.currentSong;
         if (song == null) return const SizedBox.shrink();
-        final dur = player.duration.inMilliseconds == 0 ? 1 : player.duration.inMilliseconds;
-        final pos = player.position.inMilliseconds.clamp(0, dur).toDouble();
         return Material(
           color: theme.colorScheme.surface,
           child: InkWell(
@@ -33,16 +31,7 @@ class MiniPlayer extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 顶部进度条
-                  SizedBox(
-                    height: 2,
-                    child: LinearProgressIndicator(
-                      value: pos / dur,
-                      minHeight: 2,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-                    ),
-                  ),
+                  _MiniProgressBar(player: player),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
@@ -98,6 +87,38 @@ class MiniPlayer extends StatelessWidget {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+/// 高频进度条单独订阅，避免 200ms 节奏触发整个 MiniPlayer 重建
+class _MiniProgressBar extends StatelessWidget {
+  final PlayerProvider player;
+  const _MiniProgressBar({required this.player});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ValueListenableBuilder<Duration>(
+      valueListenable: player.durationListenable,
+      builder: (context, dur, _) {
+        return ValueListenableBuilder<Duration>(
+          valueListenable: player.positionListenable,
+          builder: (context, pos, __) {
+            final dms = dur.inMilliseconds == 0 ? 1 : dur.inMilliseconds;
+            final value = (pos.inMilliseconds.clamp(0, dms)) / dms;
+            return SizedBox(
+              height: 2,
+              child: LinearProgressIndicator(
+                value: value.toDouble(),
+                minHeight: 2,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              ),
+            );
+          },
         );
       },
     );

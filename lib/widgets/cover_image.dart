@@ -17,15 +17,17 @@ class CoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cover = song?.coverPath;
     final colors = Theme.of(context).colorScheme;
     Widget child;
-    if (cover != null && File(cover).existsSync()) {
+    final cover = song?.coverPath;
+    if (cover != null && cover.isNotEmpty) {
       child = Image.file(
         File(cover),
         width: size,
         height: size,
         fit: BoxFit.cover,
+        cacheWidth: size.toInt(),
+        cacheHeight: size.toInt(),
         errorBuilder: (_, __, ___) => _placeholder(colors),
       );
     } else {
@@ -43,7 +45,10 @@ class CoverImage extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [c.primary.withOpacity(0.8), c.primary.withOpacity(0.5)],
+          colors: [
+            c.primary.withValues(alpha: 0.8),
+            c.primary.withValues(alpha: 0.5),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

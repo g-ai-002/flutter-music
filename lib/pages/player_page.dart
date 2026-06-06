@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/player_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/cover_image.dart';
 import '../widgets/lyric_view.dart';
 
@@ -138,34 +139,10 @@ class _ControlPanel extends StatelessWidget {
       ),
       child: Consumer<PlayerProvider>(
         builder: (context, p, _) {
-          final dur = p.duration;
-          final pos = p.position;
-          final max = dur.inMilliseconds == 0 ? 1.0 : dur.inMilliseconds.toDouble();
-          final value = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Text(_fmt(pos), style: theme.textTheme.bodySmall),
-                  Expanded(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 2,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: max,
-                        value: value,
-                        onChanged: (v) => p.seek(Duration(milliseconds: v.toInt())),
-                      ),
-                    ),
-                  ),
-                  Text(_fmt(dur), style: theme.textTheme.bodySmall),
-                ],
-              ),
+              _ProgressSlider(player: p),
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -234,10 +211,48 @@ class _ControlPanel extends StatelessWidget {
         return '列表循环';
     }
   }
+}
 
-  String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
+/// 进度条独立订阅 [PlayerProvider.positionListenable]，避免每 200ms 触发整页重建
+class _ProgressSlider extends StatelessWidget {
+  final PlayerProvider player;
+  const _ProgressSlider({required this.player});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ValueListenableBuilder<Duration>(
+      valueListenable: player.durationListenable,
+      builder: (context, dur, _) {
+        return ValueListenableBuilder<Duration>(
+          valueListenable: player.positionListenable,
+          builder: (context, pos, __) {
+            final max = dur.inMilliseconds == 0 ? 1.0 : dur.inMilliseconds.toDouble();
+            final value = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
+            return Row(
+              children: [
+                Text(formatDuration(pos), style: theme.textTheme.bodySmall),
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                    ),
+                    child: Slider(
+                      min: 0,
+                      max: max,
+                      value: value,
+                      onChanged: (v) => player.seek(Duration(milliseconds: v.toInt())),
+                    ),
+                  ),
+                ),
+                Text(formatDuration(dur), style: theme.textTheme.bodySmall),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }
