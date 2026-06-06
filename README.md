@@ -4,8 +4,10 @@
 
 支持：
 - 🎵 自定义扫描多个本地音乐目录
-- 🖼️ 同目录封面（`cover.jpg/png`、`folder.jpg/png`、`album.jpg/png` 等）
+- 🖼️ 同目录封面（`cover.jpg/png`、`folder.jpg/png`、`album.jpg/png` 等），无封面文件时自动回退到嵌入式封面（ID3 APIC / Vorbis APIC）
 - 📝 同名 LRC 歌词解析、居中滚动高亮
+- ❤️ 收藏 / 最近播放，独立 Tab 查看
+- 🔔 后台播放与通知栏控制（Android 锁屏/通知栏可控制上一首 / 暂停 / 下一首）
 - 🔁 列表循环 / 单曲循环 / 随机播放
 - 🌗 浅色 / 深色主题
 - 📦 主流格式：mp3 / flac / wav / m4a / aac / ogg / wma / ape / opus
@@ -60,14 +62,15 @@ flutter build windows        # Windows（需在 Windows 上）
 ## 技术栈
 
 - Flutter 3.44.1, Material 3
-- just_audio + audio_session（音频播放）
-- audio_metadata_reader（元数据）
+- just_audio + just_audio_background + audio_session（音频播放 / 后台 / 通知栏）
+- audio_metadata_reader（元数据 + 嵌入封面）
 - file_picker（目录选择）
 - permission_handler（Android 13+ 媒体权限）
 - provider（状态管理）
 
 ## 版本历史
 
+- **v0.2.0**：嵌入式封面（无同目录封面时自动回退到 ID3/Vorbis 嵌入封面，带 LRU 缓存）；收藏 / 最近播放（音乐库新增「歌曲/收藏/最近」三个 Tab，歌曲行与大播放器加心形按钮，最近一键清空）；接入 `just_audio_background` 实现后台播放与通知栏元数据同步（标题/艺术家/专辑/封面）。
 - **v0.1.3**：重构优化（无新功能）。拆分播放进度高频流为 ValueListenable，列表/迷你播放器不再被 200ms 节奏触发重建；替换 withOpacity → withValues；CoverImage 去同步 IO + cacheWidth；公共 formatDuration 工具；扫描目录路径规范化去重。
 - **v0.1.2**：修复 v0.1.1 Android APK 构建失败（file_picker 11.x → 10.3.10）
 - **v0.1.1**：修复 v0.1.0 CI 报错（lint 规则、file_picker API、未使用字段清理）

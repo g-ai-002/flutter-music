@@ -30,20 +30,20 @@
 ## 版本历史
 
 ### v0.2.0 (MINOR)
-- **状态**: 开发中 🚧
+- **状态**: 已发布 ✅
 - **目标**: 嵌入式封面 + 收藏 / 最近播放 + 后台播放 & 通知栏
 - **任务**:
-  - [ ] 嵌入式封面读取（ID3 APIC / Vorbis METADATA_BLOCK_PICTURE）并按内存 LRU 缓存
-  - [ ] 大播放器与 MiniPlayer 自动回退顺序：同目录封面 → 嵌入封面 → 占位
-  - [ ] 收藏：在歌曲行 / 大播放器添加心形按钮，持久化到 SharedPreferences
-  - [ ] 最近播放：每次播放写入头部，去重，最多 100 条
-  - [ ] 音乐库新增 Tab：歌曲 / 收藏 / 最近
-  - [ ] 接入 just_audio_background：Android Manifest service + permission；初始化锁屏 / 通知栏元数据
-  - [ ] 通知栏元数据（标题 / 艺术家 / 专辑 / 封面 URI）随切歌实时更新
-  - [ ] Windows 上不调用 just_audio_background.init（避免无效启动）
-  - [ ] 新增工具：内存安全的封面字节 LRU
-  - [ ] 单测：收藏存取、最近播放截断、LRU 行为
-  - [ ] 文档与版本号更新
+  - [x] 嵌入式封面读取（ID3 APIC / Vorbis METADATA_BLOCK_PICTURE）并按内存 LRU 缓存
+  - [x] 大播放器与 MiniPlayer 自动回退顺序：同目录封面 → 嵌入封面 → 占位
+  - [x] 收藏：在歌曲行 / 大播放器添加心形按钮，持久化到 SharedPreferences
+  - [x] 最近播放：每次播放写入头部，去重，最多 100 条
+  - [x] 音乐库新增 Tab：歌曲 / 收藏 / 最近
+  - [x] 接入 just_audio_background：Android Manifest service + permission；初始化锁屏 / 通知栏元数据
+  - [x] 通知栏元数据（标题 / 艺术家 / 专辑 / 封面 URI）随切歌实时更新
+  - [x] Windows 上不调用 just_audio_background.init（避免无效启动）
+  - [x] 新增工具：内存安全的封面字节 LRU
+  - [x] 单测：收藏存取、最近播放截断、LRU 行为
+  - [x] 文档与版本号更新
 
 ### v0.1.3 (PATCH)
 - **状态**: 已发布 ✅
