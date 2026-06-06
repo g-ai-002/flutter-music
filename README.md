@@ -68,6 +68,8 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.1.2**：修复 v0.1.1 Android APK 构建失败（file_picker 11.x → 10.3.10）
+- **v0.1.1**：修复 v0.1.0 CI 报错（lint 规则、file_picker API、未使用字段清理）
 - **v0.1.0**：首个版本。最小可用：自定义扫描目录、播放、同目录封面、LRC 歌词滚动、日志系统、自适应布局、CI 出包。
 
 更多详情见 [plan.md](./plan.md)。
