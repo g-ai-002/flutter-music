@@ -26,10 +26,10 @@ PlayMode playModeFromInt(int i) {
 /// 音频播放状态
 ///
 /// 设计上对高频信号做了拆分：
-/// - 选歌/播放状态/歌词等"低频"变化通过 [notifyListeners] 通知整个订阅者；
+/// - 选歌 / 队列 / 歌词等"低频"变化通过 [notifyListeners] 通知整个订阅者；
 /// - 播放进度 [positionListenable] / 总时长 [durationListenable]
-///   作为独立 ValueListenable 暴露，仅由播放器控件 / 歌词视图订阅，
-///   避免每 200ms 触发整个音乐库列表重建。
+///   / 是否在播 [playingListenable] 作为独立 ValueListenable 暴露，
+///   仅由相关控件订阅，避免每次播放/暂停或 200ms 节奏触发整页重建。
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   final StorageService _storage;
@@ -38,42 +38,37 @@ class PlayerProvider extends ChangeNotifier {
   List<Song> _queue = const [];
   int _currentIndex = -1;
 
+  /// 随机播放使用的洗牌索引序列：在 [PlayMode.shuffle] 下用其顺序循环遍历，
+  /// 既不会马上重复同一首，也保证每首歌在一轮中只播一次。
+  List<int> _shuffleOrder = const [];
+  int _shufflePos = -1;
+
   final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
   final ValueNotifier<Duration> _duration = ValueNotifier(Duration.zero);
-  bool _playing = false;
+  final ValueNotifier<bool> _playingNotifier = ValueNotifier(false);
   Lyrics _lyrics = Lyrics.empty;
 
-  late final StreamSubscription _posSub;
-  late final StreamSubscription _durSub;
-  late final StreamSubscription _stateSub;
-  late final StreamSubscription _completeSub;
+  final List<StreamSubscription> _subs = [];
   late final VoidCallback _settingsListener;
 
   final Random _random = Random();
 
   PlayerProvider(this._storage, this._settings) {
     _player.setVolume(_settings.volume);
-    _settingsListener = () {
-      _player.setVolume(_settings.volume);
-    };
+    _settingsListener = () => _player.setVolume(_settings.volume);
     _settings.addListener(_settingsListener);
 
-    _posSub = _player.positionStream.listen((p) {
-      _position.value = p;
-    });
-    _durSub = _player.durationStream.listen((d) {
-      _duration.value = d ?? Duration.zero;
-    });
-    _stateSub = _player.playingStream.listen((p) {
-      if (_playing == p) return;
-      _playing = p;
-      notifyListeners();
-    });
-    _completeSub = _player.processingStateStream.listen((s) {
-      if (s == ProcessingState.completed) {
-        _onCompleted();
-      }
-    });
+    _subs
+      ..add(_player.positionStream.listen((p) => _position.value = p))
+      ..add(_player.durationStream.listen((d) => _duration.value = d ?? Duration.zero))
+      ..add(_player.playingStream.listen((p) {
+        if (_playingNotifier.value == p) return;
+        _playingNotifier.value = p;
+        notifyListeners();
+      }))
+      ..add(_player.processingStateStream.listen((s) {
+        if (s == ProcessingState.completed) _onCompleted();
+      }));
   }
 
   /// 由外部注入：每次开始播放时回调（用于"最近播放"等横切关注点）
@@ -84,11 +79,12 @@ class PlayerProvider extends ChangeNotifier {
   // ---- getters ----
   Song? get currentSong =>
       (_currentIndex >= 0 && _currentIndex < _queue.length) ? _queue[_currentIndex] : null;
-  bool get playing => _playing;
+  bool get playing => _playingNotifier.value;
 
   /// 高频位置流，订阅者只重建控件本体
   ValueListenable<Duration> get positionListenable => _position;
   ValueListenable<Duration> get durationListenable => _duration;
+  ValueListenable<bool> get playingListenable => _playingNotifier;
 
   Duration get position => _position.value;
   Duration get duration => _duration.value;
@@ -99,6 +95,8 @@ class PlayerProvider extends ChangeNotifier {
   /// 设置队列并尝试恢复上次播放歌曲（不自动开始播放）
   Future<void> setQueue(List<Song> songs, {bool resumeLast = false}) async {
     _queue = songs;
+    _shuffleOrder = const [];
+    _shufflePos = -1;
     if (resumeLast) {
       final lastPath = _storage.lastSongPath;
       if (lastPath != null) {
@@ -122,6 +120,9 @@ class PlayerProvider extends ChangeNotifier {
     } else {
       _currentIndex = idx;
     }
+    // 切歌后随机序列从当前歌开始重建
+    _shuffleOrder = const [];
+    _shufflePos = -1;
     await _prepare(song, autoPlay: true);
   }
 
@@ -153,7 +154,7 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> togglePlay() async {
     if (currentSong == null) return;
-    if (_playing) {
+    if (playing) {
       await _player.pause();
     } else {
       await _player.play();
@@ -164,19 +165,7 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> next() async {
     if (_queue.isEmpty) return;
-    final m = mode;
-    int idx;
-    if (m == PlayMode.shuffle) {
-      if (_queue.length == 1) {
-        idx = 0;
-      } else {
-        do {
-          idx = _random.nextInt(_queue.length);
-        } while (idx == _currentIndex);
-      }
-    } else {
-      idx = (_currentIndex + 1) % _queue.length;
-    }
+    final idx = _resolveNextIndex();
     _currentIndex = idx;
     await _prepare(_queue[idx], autoPlay: true);
   }
@@ -186,6 +175,38 @@ class PlayerProvider extends ChangeNotifier {
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
     _currentIndex = prev;
     await _prepare(_queue[prev], autoPlay: true);
+  }
+
+  int _resolveNextIndex() {
+    if (mode == PlayMode.shuffle) {
+      if (_queue.length == 1) return 0;
+      if (_shuffleOrder.length != _queue.length) _rebuildShuffleOrder();
+      _shufflePos++;
+      if (_shufflePos >= _shuffleOrder.length) {
+        // 一轮播完，洗一轮新顺序
+        _rebuildShuffleOrder();
+        _shufflePos = 0;
+      }
+      return _shuffleOrder[_shufflePos];
+    }
+    return (_currentIndex + 1) % _queue.length;
+  }
+
+  /// Fisher-Yates 洗牌生成下一轮播放顺序；当前歌曲放到序列开头保证不重复
+  void _rebuildShuffleOrder() {
+    final order = List<int>.generate(_queue.length, (i) => i);
+    for (var i = order.length - 1; i > 0; i--) {
+      final j = _random.nextInt(i + 1);
+      final tmp = order[i];
+      order[i] = order[j];
+      order[j] = tmp;
+    }
+    if (_currentIndex >= 0) {
+      order.remove(_currentIndex);
+      order.insert(0, _currentIndex);
+    }
+    _shuffleOrder = order;
+    _shufflePos = 0; // 0 是当前歌，后续 next() 才会前进
   }
 
   void _onCompleted() {
@@ -199,18 +220,22 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> setMode(PlayMode mode) async {
     await _settings.setPlayMode(mode.index);
+    if (mode != PlayMode.shuffle) {
+      _shuffleOrder = const [];
+      _shufflePos = -1;
+    }
     notifyListeners();
   }
 
   @override
   void dispose() {
     _settings.removeListener(_settingsListener);
-    _posSub.cancel();
-    _durSub.cancel();
-    _stateSub.cancel();
-    _completeSub.cancel();
+    for (final s in _subs) {
+      s.cancel();
+    }
     _position.dispose();
     _duration.dispose();
+    _playingNotifier.dispose();
     _player.dispose();
     super.dispose();
   }

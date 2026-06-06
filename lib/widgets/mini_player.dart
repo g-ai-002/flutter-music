@@ -3,16 +3,25 @@ import 'package:provider/provider.dart';
 import '../pages/player_page.dart';
 import '../providers/player_provider.dart';
 import 'cover_image.dart';
+import 'player_listenables.dart';
 
 /// 底部迷你播放器（点击进入大播放器）
+///
+/// 设计上把高频信号都下沉到子组件订阅，避免外层每次进度推进都重建整栏：
+/// - 进度条订阅 [PlayerProvider.positionListenable]+[durationListenable]
+/// - 播放/暂停图标订阅 [PlayerProvider.playingListenable]
+/// - 仅在切歌时通过 [Selector] 重建标题/封面
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer<PlayerProvider>(
-      builder: (context, player, _) {
+    return Selector<PlayerProvider, Object?>(
+      // 仅在切歌 / 队列变化（影响 currentSong）时重建
+      selector: (_, p) => p.currentSong?.path,
+      builder: (context, _, __) {
+        final player = context.read<PlayerProvider>();
         final song = player.currentSong;
         if (song == null) return const SizedBox.shrink();
         return Material(
@@ -66,14 +75,17 @@ class MiniPlayer extends StatelessWidget {
                           icon: const Icon(Icons.skip_previous),
                           onPressed: player.previous,
                         ),
-                        IconButton(
-                          tooltip: player.playing ? '暂停' : '播放',
-                          iconSize: 32,
-                          icon: Icon(
-                            player.playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                            color: theme.colorScheme.primary,
+                        PlayingStateBuilder(
+                          player: player,
+                          builder: (context, playing, _) => IconButton(
+                            tooltip: playing ? '暂停' : '播放',
+                            iconSize: 32,
+                            icon: Icon(
+                              playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: player.togglePlay,
                           ),
-                          onPressed: player.togglePlay,
                         ),
                         IconButton(
                           tooltip: '下一首',
@@ -93,7 +105,6 @@ class MiniPlayer extends StatelessWidget {
   }
 }
 
-/// 高频进度条单独订阅，避免 200ms 节奏触发整个 MiniPlayer 重建
 class _MiniProgressBar extends StatelessWidget {
   final PlayerProvider player;
   const _MiniProgressBar({required this.player});
@@ -101,24 +112,19 @@ class _MiniProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ValueListenableBuilder<Duration>(
-      valueListenable: player.durationListenable,
-      builder: (context, dur, _) {
-        return ValueListenableBuilder<Duration>(
-          valueListenable: player.positionListenable,
-          builder: (context, pos, __) {
-            final dms = dur.inMilliseconds == 0 ? 1 : dur.inMilliseconds;
-            final value = (pos.inMilliseconds.clamp(0, dms)) / dms;
-            return SizedBox(
-              height: 2,
-              child: LinearProgressIndicator(
-                value: value.toDouble(),
-                minHeight: 2,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-              ),
-            );
-          },
+    return PlayerPositionBuilder(
+      player: player,
+      builder: (context, pos, dur) {
+        final dms = dur.inMilliseconds == 0 ? 1 : dur.inMilliseconds;
+        final value = (pos.inMilliseconds.clamp(0, dms)) / dms;
+        return SizedBox(
+          height: 2,
+          child: LinearProgressIndicator(
+            value: value.toDouble(),
+            minHeight: 2,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+          ),
         );
       },
     );
