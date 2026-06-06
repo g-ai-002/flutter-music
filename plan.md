@@ -30,7 +30,7 @@
 ## 版本历史
 
 ### v0.3.0 (MINOR)
-- **状态**: 开发中 🚧
+- **状态**: 已发布 ✅
 - **目标**: 用户自建歌单（创建 / 重命名 / 删除 / 增删歌曲 / 一键播放）
 - **任务**:
   - [x] 数据模型 `Playlist`（id、name、songPaths、createdAt、updatedAt），JSON 序列化
