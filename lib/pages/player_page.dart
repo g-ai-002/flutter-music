@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/favorites_provider.dart';
 import '../providers/player_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/cover_image.dart';
+import '../widgets/favorite_toggle_button.dart';
 import '../widgets/lyric_view.dart';
+import '../widgets/player_listenables.dart';
 
 /// 大播放器页（封面 + 歌词 + 控制条）
 class PlayerPage extends StatelessWidget {
@@ -50,7 +51,7 @@ class PlayerPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _buildSongInfo(context),
+        const _SongInfo(),
         const SizedBox(height: 4),
         const Expanded(child: LyricView()),
         const _ControlPanel(),
@@ -75,7 +76,7 @@ class PlayerPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSongInfo(context),
+                const _SongInfo(),
               ],
             ),
           ),
@@ -92,8 +93,13 @@ class PlayerPage extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildSongInfo(BuildContext context) {
+class _SongInfo extends StatelessWidget {
+  const _SongInfo();
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<PlayerProvider>(
       builder: (_, p, __) {
         final s = p.currentSong;
@@ -116,21 +122,7 @@ class PlayerPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Selector<FavoritesProvider, bool>(
-                    selector: (_, fav) => fav.isFavorite(s.path),
-                    builder: (context, fav, _) => IconButton(
-                      tooltip: fav ? '取消收藏' : '收藏',
-                      icon: Icon(
-                        fav ? Icons.favorite : Icons.favorite_outline,
-                        color: fav
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      onPressed: () => context
-                          .read<FavoritesProvider>()
-                          .toggleFavorite(s.path),
-                    ),
-                  ),
+                  FavoriteToggleButton(songPath: s.path),
                 ],
               ),
               const SizedBox(height: 4),
@@ -185,14 +177,18 @@ class _ControlPanel extends StatelessWidget {
                     icon: const Icon(Icons.skip_previous),
                     onPressed: p.previous,
                   ),
-                  IconButton(
-                    iconSize: 56,
-                    tooltip: p.playing ? '暂停' : '播放',
-                    icon: Icon(
-                      p.playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                      color: theme.colorScheme.primary,
+                  /// 播放/暂停按钮仅订阅 playingListenable，避免每次播放/暂停时重建整行控制栏
+                  PlayingStateBuilder(
+                    player: p,
+                    builder: (context, playing, _) => IconButton(
+                      iconSize: 56,
+                      tooltip: playing ? '暂停' : '播放',
+                      icon: Icon(
+                        playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: p.togglePlay,
                     ),
-                    onPressed: p.togglePlay,
                   ),
                   IconButton(
                     iconSize: 32,
@@ -237,7 +233,6 @@ class _ControlPanel extends StatelessWidget {
   }
 }
 
-/// 进度条独立订阅 [PlayerProvider.positionListenable]，避免每 200ms 触发整页重建
 class _ProgressSlider extends StatelessWidget {
   final PlayerProvider player;
   const _ProgressSlider({required this.player});
@@ -245,36 +240,31 @@ class _ProgressSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ValueListenableBuilder<Duration>(
-      valueListenable: player.durationListenable,
-      builder: (context, dur, _) {
-        return ValueListenableBuilder<Duration>(
-          valueListenable: player.positionListenable,
-          builder: (context, pos, __) {
-            final max = dur.inMilliseconds == 0 ? 1.0 : dur.inMilliseconds.toDouble();
-            final value = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
-            return Row(
-              children: [
-                Text(formatDuration(pos), style: theme.textTheme.bodySmall),
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 2,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                    ),
-                    child: Slider(
-                      min: 0,
-                      max: max,
-                      value: value,
-                      onChanged: (v) => player.seek(Duration(milliseconds: v.toInt())),
-                    ),
-                  ),
+    return PlayerPositionBuilder(
+      player: player,
+      builder: (context, pos, dur) {
+        final max = dur.inMilliseconds == 0 ? 1.0 : dur.inMilliseconds.toDouble();
+        final value = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
+        return Row(
+          children: [
+            Text(formatDuration(pos), style: theme.textTheme.bodySmall),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
                 ),
-                Text(formatDuration(dur), style: theme.textTheme.bodySmall),
-              ],
-            );
-          },
+                child: Slider(
+                  min: 0,
+                  max: max,
+                  value: value,
+                  onChanged: (v) => player.seek(Duration(milliseconds: v.toInt())),
+                ),
+              ),
+            ),
+            Text(formatDuration(dur), style: theme.textTheme.bodySmall),
+          ],
         );
       },
     );
