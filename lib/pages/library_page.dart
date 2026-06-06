@@ -85,15 +85,15 @@ class _LibraryPageState extends State<LibraryPage>
       ),
       body: Column(
         children: [
-          _buildSearchBar(context),
-          _buildScanStatus(context),
+          _SearchBar(controller: _searchCtrl),
+          const _ScanStatusBar(),
           Expanded(
             child: TabBarView(
               controller: _tabCtrl,
-              children: [
-                _buildSongTab(context),
-                _buildFavTab(context),
-                _buildRecentTab(context),
+              children: const [
+                _SongTab(),
+                _FavoriteTab(),
+                _RecentTab(),
               ],
             ),
           ),
@@ -102,36 +102,48 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
+}
 
-  Widget _buildSearchBar(BuildContext context) {
+/// 搜索栏：通过 controller 自身的 listenable 触发清除按钮显示/隐藏，
+/// 避免每次输入触发整个 LibraryPage 重建
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  const _SearchBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      child: TextField(
-        controller: _searchCtrl,
-        textInputAction: TextInputAction.search,
-        onChanged: (v) {
-          context.read<LibraryProvider>().updateSearch(v);
-          setState(() {});
-        },
-        decoration: InputDecoration(
-          hintText: '搜索 歌曲 / 艺术家 / 专辑',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _searchCtrl.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    context.read<LibraryProvider>().updateSearch('');
-                    setState(() {});
-                  },
-                ),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => TextField(
+          controller: controller,
+          textInputAction: TextInputAction.search,
+          onChanged: context.read<LibraryProvider>().updateSearch,
+          decoration: InputDecoration(
+            hintText: '搜索 歌曲 / 艺术家 / 专辑',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            suffixIcon: value.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () {
+                      controller.clear();
+                      context.read<LibraryProvider>().updateSearch('');
+                    },
+                  ),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildScanStatus(BuildContext context) {
+class _ScanStatusBar extends StatelessWidget {
+  const _ScanStatusBar();
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<LibraryProvider>(
       builder: (context, lib, _) {
         if (!lib.scanning) return const SizedBox.shrink();
@@ -154,59 +166,82 @@ class _LibraryPageState extends State<LibraryPage>
     );
   }
 
-  String _shortDir(String d) {
+  static String _shortDir(String d) {
     if (d.length <= 50) return d;
     return '…${d.substring(d.length - 48)}';
   }
+}
 
-  // ---- 歌曲 Tab ----
-  Widget _buildSongTab(BuildContext context) {
+class _SongTab extends StatelessWidget {
+  const _SongTab();
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<LibraryProvider>(
       builder: (context, lib, _) {
         final list = lib.filtered;
         if (list.isEmpty) {
-          return _buildEmpty(context, lib);
+          return _LibraryEmpty(library: lib);
         }
-        return _songList(list);
+        return _SongListView(songs: list);
       },
     );
   }
+}
 
-  // ---- 收藏 Tab ----
-  Widget _buildFavTab(BuildContext context) {
+class _FavoriteTab extends StatelessWidget {
+  const _FavoriteTab();
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer2<LibraryProvider, FavoritesProvider>(
       builder: (context, lib, fav, _) {
         final favPaths = fav.favorites;
         if (favPaths.isEmpty) {
-          return _buildTabEmpty('还没有收藏的歌曲', '点击歌曲旁的 ♡ 按钮收藏');
+          return const _EmptyState(
+            icon: Icons.favorite_outline,
+            title: '还没有收藏的歌曲',
+            subtitle: '点击歌曲旁的 ♡ 按钮收藏',
+          );
         }
         final list =
             lib.songs.where((s) => favPaths.contains(s.path)).toList();
         if (list.isEmpty) {
-          return _buildTabEmpty('收藏的歌曲已被移除', '请重新扫描');
+          return const _EmptyState(
+            icon: Icons.favorite_outline,
+            title: '收藏的歌曲已被移除',
+            subtitle: '请重新扫描',
+          );
         }
-        return _songList(list);
+        return _SongListView(songs: list);
       },
     );
   }
+}
 
-  // ---- 最近 Tab ----
-  Widget _buildRecentTab(BuildContext context) {
+class _RecentTab extends StatelessWidget {
+  const _RecentTab();
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer2<LibraryProvider, FavoritesProvider>(
       builder: (context, lib, fav, _) {
         final recentPaths = fav.recent;
         if (recentPaths.isEmpty) {
-          return _buildTabEmpty('还没有播放记录', '播放歌曲后将出现在这里');
+          return const _EmptyState(
+            icon: Icons.history,
+            title: '还没有播放记录',
+            subtitle: '播放歌曲后将出现在这里',
+          );
         }
-        final list = <Song>[];
         final songMap = {for (final s in lib.songs) s.path: s};
-        for (final p in recentPaths) {
-          final s = songMap[p];
-          if (s != null) list.add(s);
-        }
+        final list = [
+          for (final p in recentPaths)
+            if (songMap[p] != null) songMap[p]!,
+        ];
         return Stack(
           children: [
-            _songList(list),
+            _SongListView(songs: list),
             Positioned(
               right: 8,
               bottom: 8,
@@ -222,36 +257,100 @@ class _LibraryPageState extends State<LibraryPage>
       },
     );
   }
+}
 
-  Widget _buildTabEmpty(String title, String subtitle) {
+/// 通用空态组件
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget? action;
+
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.favorite_outline,
-              size: 48, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(height: 12),
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(subtitle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 56, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
               style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.center),
-        ],
+              textAlign: TextAlign.center,
+            ),
+            if (action != null) ...[
+              const SizedBox(height: 16),
+              action!,
+            ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _songList(List<Song> list) {
+/// 歌曲 Tab 的空态：根据是否有搜索词 / 是否有扫描目录给出不同引导
+class _LibraryEmpty extends StatelessWidget {
+  final LibraryProvider library;
+  const _LibraryEmpty({required this.library});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final searching = library.searchKeyword.isNotEmpty;
+    final noDirs = settings.scanDirs.isEmpty;
+    return _EmptyState(
+      icon: Icons.library_music_outlined,
+      title: searching
+          ? '没有匹配的歌曲'
+          : (noDirs ? '还没有扫描目录' : '没有发现音乐'),
+      subtitle: searching
+          ? '试试其他关键字'
+          : (noDirs ? '前往「设置」添加扫描目录' : '点击右上角刷新重新扫描'),
+      action: (!searching && noDirs)
+          ? ElevatedButton.icon(
+              icon: const Icon(Icons.folder_open),
+              label: const Text('打开设置'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
+            )
+          : null,
+    );
+  }
+}
+
+class _SongListView extends StatelessWidget {
+  final List<Song> songs;
+  const _SongListView({required this.songs});
+
+  @override
+  Widget build(BuildContext context) {
     return Selector<PlayerProvider, ({String? path, bool playing})>(
       selector: (_, p) => (path: p.currentSong?.path, playing: p.playing),
       builder: (context, snap, _) {
         return ListView.separated(
           padding: EdgeInsets.zero,
-          itemCount: list.length,
+          itemCount: songs.length,
           separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 76),
           itemBuilder: (context, i) {
-            final s = list[i];
+            final s = songs[i];
             final active = snap.path == s.path;
             return SongTile(
               song: s,
@@ -260,7 +359,8 @@ class _LibraryPageState extends State<LibraryPage>
               onTap: () async {
                 final player = context.read<PlayerProvider>();
                 await player.setQueue(
-                    context.read<LibraryProvider>().songs);
+                  context.read<LibraryProvider>().songs,
+                );
                 await player.playSong(s);
               },
               showFavorite: true,
@@ -268,52 +368,6 @@ class _LibraryPageState extends State<LibraryPage>
           },
         );
       },
-    );
-  }
-
-  Widget _buildEmpty(BuildContext context, LibraryProvider lib) {
-    final theme = Theme.of(context);
-    final settings = context.watch<SettingsProvider>();
-    final noDirs = settings.scanDirs.isEmpty;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.library_music_outlined,
-                size: 56, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(
-              lib.searchKeyword.isNotEmpty
-                  ? '没有匹配的歌曲'
-                  : (noDirs ? '还没有扫描目录' : '没有发现音乐'),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              lib.searchKeyword.isNotEmpty
-                  ? '试试其他关键字'
-                  : (noDirs ? '前往「设置」添加扫描目录' : '点击右上角刷新重新扫描'),
-              style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            if (lib.searchKeyword.isEmpty && noDirs) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: const Text('打开设置'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SettingsPage()),
-                  );
-                },
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

@@ -4,14 +4,19 @@ import '../services/log_service.dart';
 import '../services/music_scanner.dart';
 import '../services/storage_service.dart';
 
-/// 歌曲库状态：列表、扫描进度
+/// 歌曲库状态：列表、扫描进度、搜索关键字
+///
+/// `filtered` 在搜索关键字或歌曲列表变化时才重算，
+/// 避免每次 build 重新过滤 + toList。
 class LibraryProvider extends ChangeNotifier {
   final StorageService _storage;
   LibraryProvider(this._storage) {
     _songs = _storage.loadCachedSongs();
+    _filtered = _songs;
   }
 
   late List<Song> _songs;
+  late List<Song> _filtered;
   bool _scanning = false;
   ScanProgress? _progress;
   String _searchKeyword = '';
@@ -20,11 +25,15 @@ class LibraryProvider extends ChangeNotifier {
   bool get scanning => _scanning;
   ScanProgress? get progress => _progress;
   String get searchKeyword => _searchKeyword;
+  List<Song> get filtered => _filtered;
 
-  List<Song> get filtered {
-    if (_searchKeyword.isEmpty) return _songs;
+  void _recomputeFiltered() {
+    if (_searchKeyword.isEmpty) {
+      _filtered = _songs;
+      return;
+    }
     final k = _searchKeyword.toLowerCase();
-    return _songs.where((s) =>
+    _filtered = _songs.where((s) =>
       s.title.toLowerCase().contains(k) ||
       s.artist.toLowerCase().contains(k) ||
       s.album.toLowerCase().contains(k)
@@ -32,7 +41,10 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   void updateSearch(String keyword) {
-    _searchKeyword = keyword.trim();
+    final next = keyword.trim();
+    if (next == _searchKeyword) return;
+    _searchKeyword = next;
+    _recomputeFiltered();
     notifyListeners();
   }
 
@@ -40,6 +52,7 @@ class LibraryProvider extends ChangeNotifier {
     if (_scanning) return;
     if (dirs.isEmpty) {
       _songs = const [];
+      _recomputeFiltered();
       await _storage.saveCachedSongs(_songs);
       notifyListeners();
       return;
@@ -64,6 +77,7 @@ class LibraryProvider extends ChangeNotifier {
         return a.title.compareTo(b.title);
       });
       _songs = result;
+      _recomputeFiltered();
       await _storage.saveCachedSongs(_songs);
       LogService.info('扫描完成: ${_songs.length} 首');
     } catch (e, st) {
