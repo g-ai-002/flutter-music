@@ -3,7 +3,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.1.0';
+  static const String version = '0.1.1';
 
   // SharedPreferences keys
   static const String prefKeyDarkMode = 'dark_mode';

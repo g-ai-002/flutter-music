@@ -104,7 +104,7 @@ class _ScanDirSection extends StatelessWidget {
       }
     }
     try {
-      final selected = await FilePicker.platform.getDirectoryPath(
+      final selected = await FilePicker.getDirectoryPath(
         dialogTitle: '选择音乐目录',
       );
       if (selected == null || !context.mounted) return;

@@ -28,8 +28,17 @@
 
 ## 版本历史
 
-### v0.1.0 (MINOR) — 当前开发版本
+### v0.1.1 (PATCH) — 当前开发版本
 - **状态**: 开发中 🔧
+- **目标**: 修复 v0.1.0 的 CI 报错
+- **任务**:
+  - [x] 修复 `FilePicker.platform.getDirectoryPath` → `FilePicker.getDirectoryPath`（file_picker 11.x API 变更）
+  - [x] 移除 analysis_options 中已废弃的 lint 规则 `use_key_in_widgets`
+  - [x] 清理 StorageService 未使用的 `_instance` 字段
+  - [x] 版本号升至 0.1.1
+
+### v0.1.0 (MINOR)
+- **状态**: 已发布 ✅
 - **目标**: 首个版本：本地音乐播放器最小可用集
 - **任务**:
   - [x] 项目脚手架（pubspec/analysis_options/.gitignore）

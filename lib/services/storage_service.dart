@@ -5,7 +5,6 @@ import '../utils/constants.dart';
 
 /// 简单存储服务封装：SharedPreferences + 缓存的歌曲列表
 class StorageService {
-  static StorageService? _instance;
   static Future<StorageService>? _initFuture;
 
   SharedPreferences? _prefs;
@@ -24,7 +23,6 @@ class StorageService {
   static Future<StorageService> _bootstrap() async {
     final s = StorageService._();
     await s._init();
-    _instance = s;
     return s;
   }
 
