@@ -16,21 +16,39 @@ class PlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Consumer<PlayerProvider>(
-          builder: (_, p, __) {
-            final s = p.currentSong;
-            return Text(
-              s?.title ?? '正在播放',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
+        title: const Text('正在播放'),
+        actions: [
+          Consumer<PlayerProvider>(
+            builder: (_, p, __) {
+              final s = p.currentSong;
+              if (s == null) return const SizedBox.shrink();
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                tooltip: '更多操作',
+                onSelected: (v) {
+                  if (v == 'add_playlist') {
+                    showAddToPlaylistSheet(context, songPaths: [s.path]);
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'add_playlist',
+                    child: ListTile(
+                      leading: Icon(Icons.playlist_add),
+                      title: Text('添加到歌单'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, c) {
-            final wide = c.maxWidth >= 720;
+            final wide = c.maxWidth >= 600;
             return wide ? _buildWide(context) : _buildNarrow(context);
           },
         ),
@@ -134,9 +152,9 @@ class _SongInfo extends StatelessWidget {
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
+                  const SizedBox(width: 40),
+                  Expanded(
                     child: Text(
                       s.title,
                       style: theme.textTheme.titleLarge,
@@ -145,16 +163,7 @@ class _SongInfo extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   FavoriteToggleButton(songPath: s.path),
-                  IconButton(
-                    tooltip: '添加到歌单',
-                    icon: const Icon(Icons.playlist_add),
-                    onPressed: () => showAddToPlaylistSheet(
-                      context,
-                      songPaths: [s.path],
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 4),

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:audio_service/audio_service.dart' show MediaItem;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import '../models/lyric.dart';
 import '../models/song.dart';
 import '../services/log_service.dart';
@@ -31,7 +31,7 @@ PlayMode playModeFromInt(int i) {
 ///   / 是否在播 [playingListenable] 作为独立 ValueListenable 暴露，
 ///   仅由相关控件订阅，避免每次播放/暂停或 200ms 节奏触发整页重建。
 class PlayerProvider extends ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player;
   final StorageService _storage;
   final SettingsProvider _settings;
 
@@ -54,7 +54,8 @@ class PlayerProvider extends ChangeNotifier {
 
   final Random _random = Random();
 
-  PlayerProvider(this._storage, this._settings) {
+  PlayerProvider(this._storage, this._settings, {AudioPlayer? player})
+      : _player = player ?? AudioPlayer() {
     _player.setVolume(_settings.volume);
     _settingsListener = () => _player.setVolume(_settings.volume);
     _settings.addListener(_settingsListener);
@@ -139,21 +140,30 @@ class PlayerProvider extends ChangeNotifier {
     _errorMessage = null;
     try {
       LogService.info('加载歌曲: ${song.path}');
-      final source = AudioSource.uri(
-        Uri.file(song.path),
-        tag: MediaItem(
-          id: song.path,
-          title: song.title,
-          artist: song.artist,
-          album: song.album,
-          artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
-        ),
+      final mediaItem = MediaItem(
+        id: song.path,
+        title: song.title,
+        artist: song.artist,
+        album: song.album,
+        artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
+      );
+      final source = ConcatenatingAudioSource(
+        children: [
+          AudioSource.uri(
+            Uri.file(song.path),
+            tag: mediaItem,
+          ),
+        ],
       );
       await _player.setAudioSource(source);
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
           : Lyrics.empty;
+      // 等待播放器就绪，确保通知栏元数据已同步
+      await _player.processingStateStream.firstWhere(
+        (s) => s == ProcessingState.ready || s == ProcessingState.completed,
+      );
       if (autoPlay) await _player.play();
       onSongStart?.call(song);
       notifyListeners();

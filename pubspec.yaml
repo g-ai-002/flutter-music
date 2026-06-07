@@ -1,7 +1,7 @@
 name: flutter_music
 description: 本地音乐播放器 - 支持自定义扫描目录、封面显示、LRC 歌词滚动
 publish_to: 'none'
-version: 0.3.3
+version: 0.3.4
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -17,7 +17,7 @@ dependencies:
   path: 1.9.1
   just_audio: 0.10.5
   just_audio_windows: 0.2.3
-  just_audio_background: 0.0.1-beta.17
+  audio_service: 0.18.18
   audio_session: 0.2.3
   audio_metadata_reader: 1.6.0
   file_picker: 10.3.10

@@ -117,6 +117,8 @@ class _CoverImageState extends State<CoverImage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cachePx = (widget.size * dpr).round();
 
     Widget child;
     final coverPath = widget.song?.coverPath ?? _runtimeCoverPath;
@@ -128,8 +130,8 @@ class _CoverImageState extends State<CoverImage> {
         width: widget.size,
         height: widget.size,
         fit: BoxFit.cover,
-        cacheWidth: widget.size.toInt(),
-        cacheHeight: widget.size.toInt(),
+        cacheWidth: cachePx,
+        cacheHeight: cachePx,
         errorBuilder: (_, __, ___) => _placeholder(colors),
       );
     } else if (_embeddedBytes != null) {
@@ -139,8 +141,8 @@ class _CoverImageState extends State<CoverImage> {
         width: widget.size,
         height: widget.size,
         fit: BoxFit.cover,
-        cacheWidth: widget.size.toInt(),
-        cacheHeight: widget.size.toInt(),
+        cacheWidth: cachePx,
+        cacheHeight: cachePx,
         gaplessPlayback: true,
         errorBuilder: (_, __, ___) => _placeholder(colors),
       );

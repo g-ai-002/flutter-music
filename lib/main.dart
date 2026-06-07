@@ -1,9 +1,10 @@
 import 'dart:io' show Platform;
+import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:just_audio_background/just_audio_background.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -14,6 +15,7 @@ import 'providers/library_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/playlists_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/audio_handler.dart';
 import 'services/log_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
@@ -43,14 +45,21 @@ Future<void> main() async {
   await LogService.init();
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
-  // 后台播放 / 通知栏（Android / iOS / macOS 支持，Windows 桌面端跳过）
+  // 创建 AudioPlayer 供 audio_service 和 PlayerProvider 共用
+  final audioPlayer = AudioPlayer();
+
+  // 后台播放 / 通知栏（Android / iOS / macOS，Windows 桌面端跳过）
   if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
     try {
-      await JustAudioBackground.init(
-        androidNotificationChannelId: 'com.flutter.music.channel.audio',
-        androidNotificationChannelName: '音乐播放',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
+      await AudioService.init(
+        builder: () => MusicAudioHandler(audioPlayer),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'com.flutter.music.channel.audio',
+          androidNotificationChannelName: '音乐播放',
+          androidNotificationOngoing: true,
+          androidStopForegroundOnPause: true,
+          androidShowNotificationBadge: false,
+        ),
       );
     } catch (e, st) {
       LogService.error('初始化后台播放失败', e, st);
@@ -70,12 +79,13 @@ Future<void> main() async {
     statusBarBrightness: Brightness.light,
   ));
 
-  runApp(MusicApp(storage: storage));
+  runApp(MusicApp(storage: storage, audioPlayer: audioPlayer));
 }
 
 class MusicApp extends StatelessWidget {
   final StorageService storage;
-  const MusicApp({super.key, required this.storage});
+  final AudioPlayer audioPlayer;
+  const MusicApp({super.key, required this.storage, required this.audioPlayer});
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +99,8 @@ class MusicApp extends StatelessWidget {
         ChangeNotifierProxyProvider2<SettingsProvider, FavoritesProvider,
             PlayerProvider>(
           create: (ctx) {
-            final p = PlayerProvider(storage, ctx.read<SettingsProvider>());
+            final p = PlayerProvider(storage, ctx.read<SettingsProvider>(),
+                player: audioPlayer);
             p.onSongStart = (song) {
               ctx.read<FavoritesProvider>().recordPlay(song.path);
             };
@@ -142,6 +153,14 @@ class _BootState extends State<_Boot> {
       final library = context.read<LibraryProvider>();
       final settings = context.read<SettingsProvider>();
       final player = context.read<PlayerProvider>();
+      final favorites = context.read<FavoritesProvider>();
+
+      // 注册通知栏按钮回调
+      MusicAudioHandler.onLike = (songPath) {
+        favorites.toggleFavorite(songPath);
+      };
+      MusicAudioHandler.onSkipToNext = () => player.next();
+      MusicAudioHandler.onSkipToPrevious = () => player.previous();
 
       // 用缓存歌曲列表恢复队列（不自动播放）
       if (library.songs.isNotEmpty) {

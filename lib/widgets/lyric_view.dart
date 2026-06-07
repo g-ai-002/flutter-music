@@ -36,9 +36,7 @@ class _LyricViewState extends State<LyricView> {
 
   void _scrollTo(int index, double viewportHeight) {
     if (!_ctrl.hasClients) return;
-    final target = (index * widget.lineHeight) -
-        (viewportHeight / 2) +
-        (widget.lineHeight / 2);
+    final target = index * widget.lineHeight;
     final clamped = target.clamp(0.0, _ctrl.position.maxScrollExtent);
     _ctrl.animateTo(
       clamped,
