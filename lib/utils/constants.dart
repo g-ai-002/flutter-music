@@ -6,7 +6,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.3.0';
+  static const String version = '0.3.1';
 
   // SharedPreferences keys (playlists 列表 JSON)
   static const String prefKeyPlaylists = 'playlists_v1';
@@ -29,6 +29,11 @@ class AppConstants {
   static const List<String> coverFileNames = [
     'cover.jpg', 'cover.png', 'cover.jpeg', 'folder.jpg', 'folder.png',
     'album.jpg', 'album.png', 'front.jpg', 'front.png'
+  ];
+
+  // 同文件名封面扩展名（优先级高于 coverFileNames）
+  static const List<String> coverSameNameExts = [
+    '.jpg', '.jpeg', '.png', '.webp', '.bmp'
   ];
 
   // 歌词扩展名

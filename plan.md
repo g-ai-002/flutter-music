@@ -29,6 +29,16 @@
 
 ## 版本历史
 
+### v0.3.1 (PATCH)
+- **状态**: 已提交 🚧
+- **目标**: 修复 Windows + Android 平台音乐无法播放 & Android 签名不一致
+- **任务**:
+  - [x] Windows: 添加 just_audio_windows 0.2.3 提供 WinRT MediaPlayer 后端
+  - [x] Windows: 生成 windows/ 平台目录完成插件注册
+  - [x] Android: 修复 audio_service engine ID 不匹配导致 wrongEngineDetected
+  - [x] Android: 新增 MainApplication.kt 在 Application.onCreate 中设置正确的 engine ID
+  - [x] Android: 新增项目级 debug.keystore 解决构建签名不一致无法覆盖安装
+
 ### v0.3.0 (MINOR)
 - **状态**: 已发布 ✅
 - **目标**: 用户自建歌单（创建 / 重命名 / 删除 / 增删歌曲 / 一键播放）

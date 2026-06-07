@@ -97,8 +97,8 @@ class MusicScanner {
       LogService.warning('读取元数据失败 (${p.basename(path)}): $e');
     }
 
-    // 同目录封面（按优先级匹配）
-    final coverPath = await _resolveCover(dir, coverCache);
+    // 同目录封面（优先同名图片，再按预定义文件名匹配）
+    final coverPath = await _resolveCover(path, dir, coverCache);
 
     // 同名 .lrc
     final lrc = Song.lrcPathFor(path);
@@ -116,9 +116,18 @@ class MusicScanner {
     );
   }
 
-  Future<String?> _resolveCover(String dir, Map<String, String?> cache) async {
+  Future<String?> _resolveCover(String audioPath, String dir, Map<String, String?> cache) async {
+    // 1. 同名图片：song.flac → song.jpg / song.png / ...（不缓存，每首独立）
+    final audioName = p.basenameWithoutExtension(audioPath);
+    for (final ext in AppConstants.coverSameNameExts) {
+      final candidate = p.join(dir, '$audioName$ext');
+      if (await File(candidate).exists()) return candidate;
+    }
+
+    // 2. 目录级封面缓存（预定义文件名：cover.jpg / folder.jpg / ...）
     if (cache.containsKey(dir)) return cache[dir];
     String? found;
+
     for (final name in AppConstants.coverFileNames) {
       final candidate = p.join(dir, name);
       if (await File(candidate).exists()) {
@@ -126,6 +135,7 @@ class MusicScanner {
         break;
       }
     }
+
     // 大小写不敏感兜底：只在常见命名失败时再尝试列目录
     if (found == null) {
       try {

@@ -16,11 +16,7 @@ android/build/
 android/local.properties
 
 # Windows
-windows/runner/Debug/
-windows/runner/Release/
-windows/runner/x64/
-windows/flutter/ephemeral/
-windows/flutter/generated_*
+windows/
 
 # macOS
 macos/Runner/DerivedData/
@@ -49,4 +45,4 @@ Thumbs.db
 **/GeneratedPluginRegistrant.java
 **/gradle-wrapper.jar
 **/gradlew
-**/gradlew.bat
+**/gradlew.bat 
