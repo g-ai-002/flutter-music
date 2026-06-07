@@ -24,17 +24,27 @@ class _LibraryPageState extends State<LibraryPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
   final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (!_tabCtrl.indexIsChanging) {
+      _searchFocus.unfocus();
+    }
   }
 
   @override
   void dispose() {
+    _tabCtrl.removeListener(_onTabChanged);
     _tabCtrl.dispose();
     _searchCtrl.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -48,7 +58,7 @@ class _LibraryPageState extends State<LibraryPage>
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: _GlobalSearchBar(controller: _searchCtrl),
+        title: _GlobalSearchBar(controller: _searchCtrl, focusNode: _searchFocus),
         actions: [
           Consumer<LibraryProvider>(
             builder: (context, lib, _) => IconButton(
@@ -132,7 +142,8 @@ class _LibraryPageState extends State<LibraryPage>
 /// 全局搜索栏：位于 AppBar 标题位，无边框紧凑风格，始终可见
 class _GlobalSearchBar extends StatelessWidget {
   final TextEditingController controller;
-  const _GlobalSearchBar({required this.controller});
+  final FocusNode focusNode;
+  const _GlobalSearchBar({required this.controller, required this.focusNode});
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +154,9 @@ class _GlobalSearchBar extends StatelessWidget {
         height: 34,
         child: TextField(
           controller: controller,
+          focusNode: focusNode,
           textInputAction: TextInputAction.search,
+          onTapOutside: (_) => focusNode.unfocus(),
           onChanged: context.read<LibraryProvider>().updateSearch,
           style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
@@ -407,6 +420,7 @@ class _SongListView extends StatelessWidget {
               active: active,
               playing: snap.playing,
               onTap: () async {
+                FocusScope.of(context).unfocus();
                 final player = context.read<PlayerProvider>();
                 await player.setQueue(
                   context.read<LibraryProvider>().songs,
