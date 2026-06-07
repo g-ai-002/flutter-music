@@ -155,19 +155,18 @@ class _SongInfo extends StatelessWidget {
           child: Column(
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 48),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        s.title,
-                        style: theme.textTheme.titleLarge,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
+                  Flexible(
+                    child: Text(
+                      s.title,
+                      style: theme.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ),
+                  const SizedBox(width: 10),
                   FavoriteToggleButton(songPath: s.path),
                 ],
               ),

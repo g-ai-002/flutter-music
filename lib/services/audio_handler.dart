@@ -62,6 +62,7 @@ class MusicAudioHandler extends BaseAudioHandler {
       processingState: _toProcessingState(event.processingState),
       playing: _playing,
       updatePosition: event.updatePosition,
+      updateTime: event.updateTime,
       bufferedPosition: event.bufferedPosition,
       speed: 1.0,
       queueIndex: event.currentIndex,
