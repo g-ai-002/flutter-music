@@ -106,13 +106,13 @@ class PlayerPage extends StatelessWidget {
             children: [
               Expanded(
                 flex: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Consumer<PlayerProvider>(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Consumer<PlayerProvider>(
                         builder: (_, p, __) {
                           _showErrorIfAny(context, p);
                           return AspectRatio(
@@ -121,10 +121,10 @@ class PlayerPage extends StatelessWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
-                      const _SongInfo(),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    const _SongInfo(),
+                  ],
                 ),
               ),
               Expanded(
@@ -153,20 +153,22 @@ class _SongInfo extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    child: Text(
-                      s.title,
-                      style: theme.textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                  const SizedBox(width: 48),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        s.title,
+                        style: theme.textTheme.titleLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
                   FavoriteToggleButton(songPath: s.path),
                 ],
               ),
