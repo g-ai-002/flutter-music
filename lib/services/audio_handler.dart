@@ -10,19 +10,32 @@ class MusicAudioHandler extends BaseAudioHandler {
   final List<StreamSubscription> _subs = [];
 
   /// 由外部注入的回调
-  static void Function(String songPath)? onLike;
   static Future<void> Function()? onSkipToNext;
   static Future<void> Function()? onSkipToPrevious;
 
   bool _playing = false;
+  bool _hasDuration = false;
+  ja.PlaybackEvent _lastEvent = ja.PlaybackEvent();
 
   MusicAudioHandler(this._player) {
-    _subs.add(_player.playbackEventStream.listen(_onPlaybackEvent));
+    _subs.add(_player.playbackEventStream.listen((e) {
+      _lastEvent = e;
+      _onPlaybackEvent(e);
+    }));
     _subs.add(_player.playingStream.listen((p) {
       _playing = p;
     }));
+    _subs.add(_player.durationStream.listen((dur) {
+      final current = mediaItem.value;
+      if (current != null && dur != null) {
+        _hasDuration = true;
+        mediaItem.add(current.copyWith(duration: dur));
+        _onPlaybackEvent(_lastEvent);
+      }
+    }));
     _subs.add(_player.sequenceStateStream.listen((state) {
-      final tag = state?.currentSource?.tag;
+      _hasDuration = false;
+      final tag = state.currentSource?.tag;
       if (tag is MediaItem) {
         mediaItem.add(MediaItem(
           id: tag.id,
@@ -37,7 +50,6 @@ class MusicAudioHandler extends BaseAudioHandler {
 
   void _onPlaybackEvent(ja.PlaybackEvent event) {
     final controls = <MediaControl>[
-      _likeControl,
       MediaControl.skipToPrevious,
       if (_playing) MediaControl.pause else MediaControl.play,
       MediaControl.skipToNext,
@@ -45,8 +57,8 @@ class MusicAudioHandler extends BaseAudioHandler {
 
     playbackState.add(PlaybackState(
       controls: controls,
-      systemActions: const {MediaAction.seek},
-      androidCompactActionIndices: const [0, 1, 2, 3],
+      systemActions: _hasDuration ? const {MediaAction.seek} : const {},
+      androidCompactActionIndices: const [0, 1, 2],
       processingState: _toProcessingState(event.processingState),
       playing: _playing,
       updatePosition: event.updatePosition,
@@ -71,12 +83,6 @@ class MusicAudioHandler extends BaseAudioHandler {
     }
   }
 
-  static final _likeControl = MediaControl(
-    androidIcon: 'drawable/ic_notification_like',
-    label: '喜欢',
-    action: MediaAction.custom,
-  );
-
   @override
   Future<void> play() => _player.play();
 
@@ -94,14 +100,4 @@ class MusicAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> skipToPrevious() => onSkipToPrevious?.call() ?? Future.value();
-
-  @override
-  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {
-    if (name == 'like') {
-      final current = mediaItem.value;
-      if (current != null) {
-        onLike?.call(current.id);
-      }
-    }
-  }
 }

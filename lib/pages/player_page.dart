@@ -99,39 +99,42 @@ class PlayerPage extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context) {
-    return Row(
+    return Column(
       children: [
         Expanded(
-          flex: 5,
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Consumer<PlayerProvider>(
-                  builder: (_, p, __) {
-                    _showErrorIfAny(context, p);
-                    return AspectRatio(
-                      aspectRatio: 1,
-                      child: CoverImage(song: p.currentSong, size: 400, radius: 16),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                const _SongInfo(),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 6,
-          child: Column(
+          child: Row(
             children: [
-              const Expanded(child: LyricView()),
-              const _ControlPanel(),
+              Expanded(
+                flex: 5,
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Consumer<PlayerProvider>(
+                        builder: (_, p, __) {
+                          _showErrorIfAny(context, p);
+                          return AspectRatio(
+                            aspectRatio: 1,
+                            child: CoverImage(song: p.currentSong, size: 400, radius: 16),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const _SongInfo(),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 6,
+                child: const LyricView(),
+              ),
             ],
           ),
         ),
+        const _ControlPanel(),
       ],
     );
   }
@@ -153,14 +156,16 @@ class _SongInfo extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const SizedBox(width: 40),
+                  const SizedBox(width: 48),
                   Expanded(
-                    child: Text(
-                      s.title,
-                      style: theme.textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                    child: Center(
+                      child: Text(
+                        s.title,
+                        style: theme.textTheme.titleLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                   FavoriteToggleButton(songPath: s.path),
@@ -202,7 +207,7 @@ class _ControlPanel extends StatelessWidget {
               _ProgressSlider(player: p),
               const SizedBox(height: 4),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
                     tooltip: _modeTip(p.mode),
@@ -212,12 +217,14 @@ class _ControlPanel extends StatelessWidget {
                       p.setMode(next);
                     },
                   ),
+                  const SizedBox(width: 16),
                   IconButton(
                     iconSize: 32,
                     tooltip: '上一首',
                     icon: const Icon(Icons.skip_previous),
                     onPressed: p.previous,
                   ),
+                  const SizedBox(width: 16),
                   /// 播放/暂停按钮仅订阅 playingListenable，避免每次播放/暂停时重建整行控制栏
                   PlayingStateBuilder(
                     player: p,
@@ -231,12 +238,14 @@ class _ControlPanel extends StatelessWidget {
                       onPressed: p.togglePlay,
                     ),
                   ),
+                  const SizedBox(width: 16),
                   IconButton(
                     iconSize: 32,
                     tooltip: '下一首',
                     icon: const Icon(Icons.skip_next),
                     onPressed: p.next,
                   ),
+                  const SizedBox(width: 16),
                   IconButton(
                     tooltip: '收起',
                     icon: const Icon(Icons.keyboard_arrow_down),

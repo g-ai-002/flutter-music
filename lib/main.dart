@@ -59,6 +59,8 @@ Future<void> main() async {
           androidNotificationOngoing: true,
           androidStopForegroundOnPause: true,
           androidShowNotificationBadge: false,
+          androidNotificationIcon: 'drawable/ic_notification_like',
+          notificationColor: const Color(0xFF1DB954),
         ),
       );
     } catch (e, st) {
@@ -153,12 +155,8 @@ class _BootState extends State<_Boot> {
       final library = context.read<LibraryProvider>();
       final settings = context.read<SettingsProvider>();
       final player = context.read<PlayerProvider>();
-      final favorites = context.read<FavoritesProvider>();
 
       // 注册通知栏按钮回调
-      MusicAudioHandler.onLike = (songPath) {
-        favorites.toggleFavorite(songPath);
-      };
       MusicAudioHandler.onSkipToNext = () => player.next();
       MusicAudioHandler.onSkipToPrevious = () => player.previous();
 
