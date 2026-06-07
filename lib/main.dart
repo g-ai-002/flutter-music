@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -132,6 +133,12 @@ class _BootState extends State<_Boot> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Android 启动时请求媒体权限（音频 + 图片），确保封面图片可读取
+      if (Platform.isAndroid) {
+        await Permission.audio.request();
+        await Permission.photos.request();
+      }
+
       final library = context.read<LibraryProvider>();
       final settings = context.read<SettingsProvider>();
       final player = context.read<PlayerProvider>();

@@ -92,12 +92,13 @@ class _ScanDirSection extends StatelessWidget {
 
   Future<void> _addDir(BuildContext context) async {
     if (Platform.isAndroid) {
-      // Android 13+ 需要 READ_MEDIA_AUDIO
-      final status = await Permission.audio.request();
-      if (!status.isGranted) {
+      // Android 13+ 需要分别申请音频和图片权限（细粒度媒体权限）
+      final audioStatus = await Permission.audio.request();
+      final photosStatus = await Permission.photos.request();
+      if (!audioStatus.isGranted || !photosStatus.isGranted) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('需要授予音频访问权限')),
+            const SnackBar(content: Text('需要授予音频和图片访问权限')),
           );
         }
         return;

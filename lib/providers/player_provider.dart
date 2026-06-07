@@ -47,6 +47,7 @@ class PlayerProvider extends ChangeNotifier {
   final ValueNotifier<Duration> _duration = ValueNotifier(Duration.zero);
   final ValueNotifier<bool> _playingNotifier = ValueNotifier(false);
   Lyrics _lyrics = Lyrics.empty;
+  String? _errorMessage;
 
   final List<StreamSubscription> _subs = [];
   late final VoidCallback _settingsListener;
@@ -68,6 +69,11 @@ class PlayerProvider extends ChangeNotifier {
       }))
       ..add(_player.processingStateStream.listen((s) {
         if (s == ProcessingState.completed) _onCompleted();
+      }))
+      ..add(_player.errorStream.listen((e) {
+        _errorMessage = '播放失败: ${e.message}';
+        LogService.error('播放器错误: ${e.code} - ${e.message}');
+        notifyListeners();
       }));
   }
 
@@ -85,6 +91,9 @@ class PlayerProvider extends ChangeNotifier {
   ValueListenable<Duration> get positionListenable => _position;
   ValueListenable<Duration> get durationListenable => _duration;
   ValueListenable<bool> get playingListenable => _playingNotifier;
+
+  /// 最近一次播放错误消息（null 表示无错误），UI 层可用 SnackBar 展示
+  String? get errorMessage => _errorMessage;
 
   Duration get position => _position.value;
   Duration get duration => _duration.value;
@@ -127,6 +136,7 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> _prepare(Song song, {required bool autoPlay}) async {
+    _errorMessage = null;
     try {
       LogService.info('加载歌曲: ${song.path}');
       final source = AudioSource.uri(
@@ -148,7 +158,9 @@ class PlayerProvider extends ChangeNotifier {
       onSongStart?.call(song);
       notifyListeners();
     } catch (e, st) {
+      _errorMessage = '加载失败: $e';
       LogService.error('加载歌曲失败: ${song.path}', e, st);
+      notifyListeners();
     }
   }
 

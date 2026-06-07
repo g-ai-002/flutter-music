@@ -1,10 +1,18 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../models/song.dart';
 import '../services/cover_service.dart';
+import '../utils/constants.dart';
 
 /// 封面显示组件：同目录磁盘文件 -> 嵌入式封面(ID3 APIC) -> 占位音符
+///
+/// 加载优先级：
+/// 1. Song.coverPath（扫描时已解析的同目录封面）
+/// 2. 运行时按歌曲同名匹配的图片文件（处理扫描后新增封面的情况）
+/// 3. 音频文件内嵌封面（ID3 APIC）
+/// 4. 占位渐变图标
 class CoverImage extends StatefulWidget {
   final Song? song;
   final double size;
@@ -24,6 +32,8 @@ class CoverImage extends StatefulWidget {
 class _CoverImageState extends State<CoverImage> {
   Uint8List? _embeddedBytes;
   bool _loadingEmbedded = false;
+  String? _runtimeCoverPath;
+  bool _resolvingRuntime = false;
 
   @override
   void didUpdateWidget(CoverImage oldWidget) {
@@ -31,20 +41,59 @@ class _CoverImageState extends State<CoverImage> {
     if (oldWidget.song?.path != widget.song?.path) {
       _embeddedBytes = null;
       _loadingEmbedded = false;
-      _tryLoadEmbedded();
+      _runtimeCoverPath = null;
+      _resolvingRuntime = false;
+      _tryLoadCover();
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _tryLoadCover();
+  }
+
+  /// 统一封面加载入口：按优先级尝试各来源
+  void _tryLoadCover() {
+    final song = widget.song;
+    if (song == null) return;
+
+    if (song.coverPath != null && song.coverPath!.isNotEmpty) return;
+    if (_runtimeCoverPath != null) return;
+
+    if (!_resolvingRuntime) {
+      _resolvingRuntime = true;
+      _resolveRuntimeCover(song);
+      return;
+    }
+
     _tryLoadEmbedded();
+  }
+
+  /// 运行时匹配歌曲同名图片文件（处理扫描后新增封面的场景）
+  Future<void> _resolveRuntimeCover(Song song) async {
+    final dir = song.parentDir;
+    final audioName = p.basenameWithoutExtension(song.path);
+    String? found;
+    for (final ext in AppConstants.coverSameNameExts) {
+      final candidate = p.join(dir, '$audioName$ext');
+      if (await File(candidate).exists()) {
+        found = candidate;
+        break;
+      }
+    }
+    if (!mounted) return;
+    _resolvingRuntime = false;
+    if (found != null) {
+      setState(() => _runtimeCoverPath = found);
+    } else {
+      _tryLoadEmbedded();
+    }
   }
 
   void _tryLoadEmbedded() {
     final song = widget.song;
     if (song == null) return;
-    if (song.coverPath != null && song.coverPath!.isNotEmpty) return; // 有同目录封面，跳过
     if (_loadingEmbedded) return;
     _loadingEmbedded = true;
 
@@ -70,7 +119,7 @@ class _CoverImageState extends State<CoverImage> {
     final colors = Theme.of(context).colorScheme;
 
     Widget child;
-    final coverPath = widget.song?.coverPath;
+    final coverPath = widget.song?.coverPath ?? _runtimeCoverPath;
 
     if (coverPath != null && coverPath.isNotEmpty) {
       // 1. 同目录封面文件

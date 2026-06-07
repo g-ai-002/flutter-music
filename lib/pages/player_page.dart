@@ -38,18 +38,38 @@ class PlayerPage extends StatelessWidget {
     );
   }
 
+  void _showErrorIfAny(BuildContext context, PlayerProvider p) {
+    final msg = p.errorMessage;
+    if (msg != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(label: '了解', onPressed: () {}),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   Widget _buildNarrow(BuildContext context) {
     return Column(
       children: [
         const SizedBox(height: 12),
         Consumer<PlayerProvider>(
-          builder: (_, p, __) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: CoverImage(song: p.currentSong, size: 320, radius: 12),
-            ),
-          ),
+          builder: (_, p, __) {
+            _showErrorIfAny(context, p);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: CoverImage(song: p.currentSong, size: 320, radius: 12),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 8),
         const _SongInfo(),
@@ -71,10 +91,13 @@ class PlayerPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Consumer<PlayerProvider>(
-                  builder: (_, p, __) => AspectRatio(
-                    aspectRatio: 1,
-                    child: CoverImage(song: p.currentSong, size: 400, radius: 16),
-                  ),
+                  builder: (_, p, __) {
+                    _showErrorIfAny(context, p);
+                    return AspectRatio(
+                      aspectRatio: 1,
+                      child: CoverImage(song: p.currentSong, size: 400, radius: 16),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 const _SongInfo(),

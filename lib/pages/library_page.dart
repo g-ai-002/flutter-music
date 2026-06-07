@@ -89,10 +89,29 @@ class _LibraryPageState extends State<LibraryPage>
       ),
       body: Column(
         children: [
+          // 播放错误提示（订阅 errorMessage 变化）
+          Consumer<PlayerProvider>(
+            builder: (context, player, _) {
+              final msg = player.errorMessage;
+              if (msg != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(msg),
+                        duration: const Duration(seconds: 4),
+                        action: SnackBarAction(label: '了解', onPressed: () {}),
+                      ),
+                    );
+                  }
+                });
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           ListenableBuilder(
             listenable: _tabCtrl,
             builder: (context, _) {
-              // 歌单 Tab 隐藏搜索框（歌单本身较少，无需搜索）
               if (_tabCtrl.index == 3) return const SizedBox.shrink();
               return _SearchBar(controller: _searchCtrl);
             },
