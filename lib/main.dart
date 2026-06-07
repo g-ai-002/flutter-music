@@ -149,10 +149,11 @@ class _BootState extends State<_Boot> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Android 启动时请求媒体权限（音频 + 图片），确保封面图片可读取
+      // Android 启动时请求媒体权限（音频 + 图片 + 通知），确保封面图片可读取、通知栏可显示
       if (Platform.isAndroid) {
         await Permission.audio.request();
         await Permission.photos.request();
+        await Permission.notification.request();
       }
 
       final library = context.read<LibraryProvider>();

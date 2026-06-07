@@ -48,7 +48,7 @@ class _LibraryPageState extends State<LibraryPage>
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('音乐库'),
+        title: _GlobalSearchBar(controller: _searchCtrl),
         actions: [
           Consumer<LibraryProvider>(
             builder: (context, lib, _) => IconButton(
@@ -110,13 +110,6 @@ class _LibraryPageState extends State<LibraryPage>
               return const SizedBox.shrink();
             },
           ),
-          ListenableBuilder(
-            listenable: _tabCtrl,
-            builder: (context, _) {
-              if (_tabCtrl.index == 3) return const SizedBox.shrink();
-              return _SearchBar(controller: _searchCtrl);
-            },
-          ),
           const _ScanStatusBar(),
           Expanded(
             child: TabBarView(
@@ -136,34 +129,57 @@ class _LibraryPageState extends State<LibraryPage>
   }
 }
 
-/// 搜索栏：通过 controller 自身的 listenable 触发清除按钮显示/隐藏，
-/// 避免每次输入触发整个 LibraryPage 重建
-class _SearchBar extends StatelessWidget {
+/// 全局搜索栏：位于 AppBar 标题位，无边框紧凑风格，始终可见
+class _GlobalSearchBar extends StatelessWidget {
   final TextEditingController controller;
-  const _SearchBar({required this.controller});
+  const _GlobalSearchBar({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      child: ValueListenableBuilder<TextEditingValue>(
-        valueListenable: controller,
-        builder: (context, value, _) => TextField(
+    final theme = Theme.of(context);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) => SizedBox(
+        height: 34,
+        child: TextField(
           controller: controller,
           textInputAction: TextInputAction.search,
           onChanged: context.read<LibraryProvider>().updateSearch,
+          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: '搜索 歌曲 / 艺术家 / 专辑',
-            prefixIcon: const Icon(Icons.search, size: 20),
+            hintStyle: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            ),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            prefixIcon: const Icon(Icons.search, size: 18),
             suffixIcon: value.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const Icon(Icons.close, size: 16),
+                    visualDensity: VisualDensity.compact,
                     onPressed: () {
                       controller.clear();
                       context.read<LibraryProvider>().updateSearch('');
                     },
                   ),
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            isDense: true,
           ),
         ),
       ),
@@ -237,12 +253,13 @@ class _FavoriteTab extends StatelessWidget {
           );
         }
         final list =
-            lib.songs.where((s) => favPaths.contains(s.path)).toList();
+            lib.filtered.where((s) => favPaths.contains(s.path)).toList();
         if (list.isEmpty) {
-          return const _EmptyState(
+          final searching = lib.searchKeyword.isNotEmpty;
+          return _EmptyState(
             icon: Icons.favorite_outline,
-            title: '收藏的歌曲已被移除',
-            subtitle: '请重新扫描',
+            title: searching ? '没有匹配的收藏' : '收藏的歌曲已被移除',
+            subtitle: searching ? '试试其他关键字' : '请重新扫描',
           );
         }
         return _SongListView(songs: list);
@@ -266,10 +283,11 @@ class _RecentTab extends StatelessWidget {
             subtitle: '播放歌曲后将出现在这里',
           );
         }
+        final filteredSet = lib.filtered.map((s) => s.path).toSet();
         final songMap = {for (final s in lib.songs) s.path: s};
         final list = [
           for (final p in recentPaths)
-            if (songMap[p] != null) songMap[p]!,
+            if (songMap[p] != null && filteredSet.contains(p)) songMap[p]!,
         ];
         return Stack(
           children: [

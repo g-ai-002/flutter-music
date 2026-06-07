@@ -16,7 +16,6 @@ class MusicAudioHandler extends BaseAudioHandler {
   static MusicAudioHandler? _instance;
 
   bool _playing = false;
-  bool _hasDuration = false;
   ja.PlaybackEvent _lastEvent = ja.PlaybackEvent();
 
   MusicAudioHandler(this._player) {
@@ -31,13 +30,11 @@ class MusicAudioHandler extends BaseAudioHandler {
     _subs.add(_player.durationStream.listen((dur) {
       final current = mediaItem.value;
       if (current != null && dur != null) {
-        _hasDuration = true;
         mediaItem.add(current.copyWith(duration: dur));
         _onPlaybackEvent(_lastEvent);
       }
     }));
     _subs.add(_player.sequenceStateStream.listen((state) {
-      _hasDuration = false;
       final tag = state.currentSource?.tag;
       if (tag is MediaItem) {
         mediaItem.add(MediaItem(
@@ -60,7 +57,7 @@ class MusicAudioHandler extends BaseAudioHandler {
 
     playbackState.add(PlaybackState(
       controls: controls,
-      systemActions: _hasDuration ? const {MediaAction.seek} : const {},
+      systemActions: const {MediaAction.seek},
       androidCompactActionIndices: const [0, 1, 2],
       processingState: _toProcessingState(event.processingState),
       playing: _playing,

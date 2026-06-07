@@ -29,6 +29,17 @@
 
 ## 版本历史
 
+### v0.3.10 (PATCH)
+- **状态**: 开发中 🚧
+- **目标**: 全局搜索框重构 + 通知栏进度修复
+- **任务**:
+  - [x] 搜索框移至 AppBar 标题位，替换"音乐库"，全局可见
+  - [x] 搜索框风格匹配参考项目：无边框 BorderSide.none、紧凑 34px、圆角 8px
+  - [x] 搜索范围扩展至收藏/最近 Tab，实现真正的全局搜索
+  - [x] Android 添加 POST_NOTIFICATIONS 权限声明
+  - [x] 启动时请求通知运行时权限（Android 13+）
+  - [x] audio_handler 移除 _hasDuration 条件，始终启用 systemActions.seek
+
 ### v0.3.1 (PATCH)
 - **状态**: 已提交 🚧
 - **目标**: 修复 Windows + Android 平台音乐无法播放 & Android 签名不一致
