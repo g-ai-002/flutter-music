@@ -16,6 +16,8 @@ class LyricParser {
   static final RegExp _timeTag =
       RegExp(r'\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
   static final RegExp _metaTag = RegExp(r'\[([a-zA-Z]+):([^\]]*)\]');
+  /// 段落标记：[Intro], [Verse 1], [Chorus] 等（不含冒号，非时间格式）
+  static final RegExp _sectionTag = RegExp(r'^\[([^\]:]+)\]$');
 
   static Future<Lyrics> parseFile(String path) async {
     try {
@@ -59,6 +61,12 @@ class LyricParser {
       }
 
       if (times.isEmpty) {
+        // 段落标记如 [Intro], [Verse 1], [Chorus] → 插入空行分隔
+        if (_sectionTag.hasMatch(line)) {
+          final t = lines.isNotEmpty ? lines.last.time : Duration.zero;
+          lines.add(LyricLine(t, ''));
+          continue;
+        }
         // 元信息标签
         final metaMatches = _metaTag.allMatches(line).toList();
         for (final m in metaMatches) {

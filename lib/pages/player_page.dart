@@ -16,7 +16,9 @@ class PlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('正在播放'),
+        title: Consumer<PlayerProvider>(
+          builder: (_, p, __) => Text(p.currentSong?.title ?? '正在播放'),
+        ),
         actions: [
           Consumer<PlayerProvider>(
             builder: (_, p, __) {

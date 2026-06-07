@@ -29,7 +29,7 @@ class MiniPlayer extends StatelessWidget {
           child: InkWell(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const PlayerPage()),
+              _SlideUpRoute(builder: (_) => const PlayerPage()),
             ),
             child: Container(
               decoration: BoxDecoration(
@@ -61,11 +61,14 @@ class MiniPlayer extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                song.artist,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall,
+                              ValueListenableBuilder<String>(
+                                valueListenable: player.currentLyricListenable,
+                                builder: (context, lyric, _) => Text(
+                                  lyric.isNotEmpty ? lyric : song.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall,
+                                ),
                               ),
                             ],
                           ),
@@ -129,4 +132,26 @@ class _MiniProgressBar extends StatelessWidget {
       },
     );
   }
+}
+
+/// 纵向滑动路由：进入时从下向上滑入，返回时从上向下滑出
+class _SlideUpRoute extends PageRouteBuilder {
+  _SlideUpRoute({required WidgetBuilder builder})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              builder(context),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+        );
 }

@@ -106,6 +106,9 @@ class MusicApp extends StatelessWidget {
             p.onSongStart = (song) {
               ctx.read<FavoritesProvider>().recordPlay(song.path);
             };
+            p.onLyricUpdate = (text) {
+              MusicAudioHandler.updateArtist(text);
+            };
             return p;
           },
           update: (_, __, ___, prev) => prev!,

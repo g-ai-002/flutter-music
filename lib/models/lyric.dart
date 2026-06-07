@@ -19,6 +19,7 @@ class Lyrics {
   bool get isNotEmpty => lines.isNotEmpty;
 
   /// 根据当前播放位置返回应高亮的行索引；无歌词或在第一行之前返回 -1
+  /// 空行（段落分隔）不会被返回，会回退到最近的非空行
   int indexAt(Duration position) {
     if (lines.isEmpty) return -1;
     if (position < lines.first.time) return -1;
@@ -32,6 +33,10 @@ class Lyrics {
       } else {
         hi = mid - 1;
       }
+    }
+    // 跳过段落分隔的空行，回退到最近的非空行
+    while (ans >= 0 && lines[ans].text.isEmpty) {
+      ans--;
     }
     return ans;
   }

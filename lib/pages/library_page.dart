@@ -79,6 +79,7 @@ class _LibraryPageState extends State<LibraryPage>
           labelColor: theme.colorScheme.primary,
           unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
           indicatorColor: theme.colorScheme.primary,
+          dividerColor: theme.colorScheme.outline.withValues(alpha: 0.3),
           tabs: const [
             Tab(text: '歌曲'),
             Tab(text: '收藏'),

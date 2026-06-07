@@ -46,6 +46,7 @@ class PlayerProvider extends ChangeNotifier {
   final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
   final ValueNotifier<Duration> _duration = ValueNotifier(Duration.zero);
   final ValueNotifier<bool> _playingNotifier = ValueNotifier(false);
+  final ValueNotifier<String> _currentLyricNotifier = ValueNotifier('');
   Lyrics _lyrics = Lyrics.empty;
   String? _errorMessage;
 
@@ -61,7 +62,10 @@ class PlayerProvider extends ChangeNotifier {
     _settings.addListener(_settingsListener);
 
     _subs
-      ..add(_player.positionStream.listen((p) => _position.value = p))
+      ..add(_player.positionStream.listen((p) {
+        _position.value = p;
+        _checkLyricUpdate(p);
+      }))
       ..add(_player.durationStream.listen((d) => _duration.value = d ?? Duration.zero))
       ..add(_player.playingStream.listen((p) {
         if (_playingNotifier.value == p) return;
@@ -83,6 +87,10 @@ class PlayerProvider extends ChangeNotifier {
   /// 设计上让 PlayerProvider 不直接依赖 FavoritesProvider，便于单测。
   void Function(Song song)? onSongStart;
 
+  /// 由外部注入：当前歌词行变化时回调（用于通知栏等横切关注点）
+  void Function(String lyricText)? onLyricUpdate;
+  String _lastLyricText = '';
+
   // ---- getters ----
   Song? get currentSong =>
       (_currentIndex >= 0 && _currentIndex < _queue.length) ? _queue[_currentIndex] : null;
@@ -92,6 +100,7 @@ class PlayerProvider extends ChangeNotifier {
   ValueListenable<Duration> get positionListenable => _position;
   ValueListenable<Duration> get durationListenable => _duration;
   ValueListenable<bool> get playingListenable => _playingNotifier;
+  ValueListenable<String> get currentLyricListenable => _currentLyricNotifier;
 
   /// 最近一次播放错误消息（null 表示无错误），UI 层可用 SnackBar 展示
   String? get errorMessage => _errorMessage;
@@ -160,6 +169,8 @@ class PlayerProvider extends ChangeNotifier {
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
           : Lyrics.empty;
+      _lastLyricText = '';
+      _currentLyricNotifier.value = '';
       // 等待播放器就绪，确保通知栏元数据已同步
       await _player.processingStateStream.firstWhere(
         (s) => s == ProcessingState.ready || s == ProcessingState.completed,
@@ -231,6 +242,17 @@ class PlayerProvider extends ChangeNotifier {
     _shufflePos = 0; // 0 是当前歌，后续 next() 才会前进
   }
 
+  void _checkLyricUpdate(Duration pos) {
+    if (_lyrics.isEmpty) return;
+    final idx = _lyrics.indexAt(pos);
+    if (idx < 0) return;
+    final text = _lyrics.lines[idx].text;
+    if (text.isEmpty || text == _lastLyricText) return;
+    _lastLyricText = text;
+    _currentLyricNotifier.value = text;
+    onLyricUpdate?.call(text);
+  }
+
   void _onCompleted() {
     if (mode == PlayMode.single) {
       _player.seek(Duration.zero);
@@ -258,6 +280,7 @@ class PlayerProvider extends ChangeNotifier {
     _position.dispose();
     _duration.dispose();
     _playingNotifier.dispose();
+    _currentLyricNotifier.dispose();
     _player.dispose();
     super.dispose();
   }

@@ -13,11 +13,14 @@ class MusicAudioHandler extends BaseAudioHandler {
   static Future<void> Function()? onSkipToNext;
   static Future<void> Function()? onSkipToPrevious;
 
+  static MusicAudioHandler? _instance;
+
   bool _playing = false;
   bool _hasDuration = false;
   ja.PlaybackEvent _lastEvent = ja.PlaybackEvent();
 
   MusicAudioHandler(this._player) {
+    _instance = this;
     _subs.add(_player.playbackEventStream.listen((e) {
       _lastEvent = e;
       _onPlaybackEvent(e);
@@ -101,4 +104,12 @@ class MusicAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> skipToPrevious() => onSkipToPrevious?.call() ?? Future.value();
+
+  /// 通知栏 artist 行动态替换为当前歌词
+  static void updateArtist(String text) {
+    final item = _instance?.mediaItem.value;
+    if (item != null) {
+      _instance?.mediaItem.add(item.copyWith(artist: text));
+    }
+  }
 }

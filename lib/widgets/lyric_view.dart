@@ -101,7 +101,7 @@ class _LyricViewState extends State<LyricView> {
                           ),
                           textAlign: widget.textAlign,
                           child: Text(
-                            line.text.isEmpty ? '·' : line.text,
+                            line.text,
                             textAlign: widget.textAlign,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
