@@ -10,30 +10,30 @@
         android:strokeColor="#FFFFFF"
         android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:pathData="M42,28 L42,72"/>
+        android:pathData="M46,30 L46,70"/>
 
     <!-- 高音符杆 -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:pathData="M82,28 L82,66"/>
+        android:pathData="M78,30 L78,66"/>
 
     <!-- 横梁 -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:pathData="M42,28 L82,28"/>
+        android:pathData="M46,30 L78,30"/>
 
     <!-- 低音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34,60 a12,12 0,1 1,0 24 a12,12 0,1 1,0 -24"/>
+        android:pathData="M38,58 a12,12 0,1 1,0 24 a12,12 0,1 1,0 -24"/>
 
     <!-- 高音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M74,54 a12,12 0,1 1,0 24 a12,12 0,1 1,0 -24"/>
+        android:pathData="M70,54 a12,12 0,1 1,0 24 a12,12 0,1 1,0 -24"/>
 
 </vector>
