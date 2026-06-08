@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:audio_service/audio_service.dart' show MediaItem;
 import 'package:flutter/foundation.dart';
@@ -49,6 +50,8 @@ class PlayerProvider extends ChangeNotifier {
   final ValueNotifier<String> _currentLyricNotifier = ValueNotifier('');
   Lyrics _lyrics = Lyrics.empty;
   String? _errorMessage;
+
+  bool _preparing = false;
 
   final List<StreamSubscription> _subs = [];
   late final VoidCallback _settingsListener;
@@ -151,9 +154,22 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> _prepare(Song song, {required bool autoPlay, Duration? seekTo}) async {
+    if (_preparing) {
+      LogService.warning('播放器正在加载中，忽略重复请求');
+      return;
+    }
+    _preparing = true;
     _errorMessage = null;
     try {
       LogService.info('加载歌曲: ${song.path}');
+      // 播放前校验文件是否存在
+      final file = File(song.path);
+      if (!await file.exists()) {
+        _errorMessage = '文件不存在: ${song.path}';
+        LogService.warning(_errorMessage!);
+        notifyListeners();
+        return;
+      }
       final mediaItem = MediaItem(
         id: song.path,
         title: song.title,
@@ -161,6 +177,7 @@ class PlayerProvider extends ChangeNotifier {
         album: song.album,
         artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
       );
+      LogService.info('创建 AudioSource: ${song.path}');
       final source = ConcatenatingAudioSource(
         children: [
           AudioSource.uri(
@@ -169,17 +186,22 @@ class PlayerProvider extends ChangeNotifier {
           ),
         ],
       );
+      LogService.info('调用 setAudioSource...');
       await _player.setAudioSource(source);
+      LogService.info('setAudioSource 完成');
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
           : Lyrics.empty;
       _lastLyricText = '';
       _currentLyricNotifier.value = '';
-      // 等待播放器就绪，确保通知栏元数据已同步
+      // 等待播放器就绪，最多等 30 秒
       await _player.processingStateStream.firstWhere(
         (s) => s == ProcessingState.ready || s == ProcessingState.completed,
-      );
+      ).timeout(const Duration(seconds: 30), onTimeout: () {
+        LogService.warning('播放器就绪超时: ${song.path}');
+        return _player.processingState;
+      });
       if (seekTo != null) {
         await _player.seek(seekTo);
       }
@@ -190,6 +212,8 @@ class PlayerProvider extends ChangeNotifier {
       _errorMessage = '加载失败: $e';
       LogService.error('加载歌曲失败: ${song.path}', e, st);
       notifyListeners();
+    } finally {
+      _preparing = false;
     }
   }
 

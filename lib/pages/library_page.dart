@@ -421,11 +421,18 @@ class _SongListView extends StatelessWidget {
               playing: snap.playing,
               onTap: () async {
                 FocusScope.of(context).unfocus();
-                final player = context.read<PlayerProvider>();
-                await player.setQueue(
-                  context.read<LibraryProvider>().songs,
-                );
-                await player.playSong(s);
+                try {
+                  final player = context.read<PlayerProvider>();
+                  if (!context.mounted) return;
+                  final songs = context.read<LibraryProvider>().songs;
+                  await player.setQueue(songs);
+                  await player.playSong(s);
+                } catch (e, _) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('播放失败: $e')),
+                  );
+                }
               },
               showFavorite: true,
             );
