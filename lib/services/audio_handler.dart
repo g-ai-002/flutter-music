@@ -31,7 +31,6 @@ class MusicAudioHandler extends BaseAudioHandler {
       final current = mediaItem.value;
       if (current != null && dur != null) {
         mediaItem.add(current.copyWith(duration: dur));
-        _onPlaybackEvent(_lastEvent);
       }
     }));
     _subs.add(_player.sequenceStateStream.listen((state) {
@@ -55,13 +54,19 @@ class MusicAudioHandler extends BaseAudioHandler {
       MediaControl.skipToNext,
     ];
 
+    // 同步 duration 到 MediaItem，确保通知栏知道总时长
+    final current = mediaItem.value;
+    if (current != null && event.duration != null) {
+      mediaItem.add(current.copyWith(duration: event.duration));
+    }
+
     playbackState.add(PlaybackState(
       controls: controls,
       systemActions: const {MediaAction.seek},
       androidCompactActionIndices: const [0, 1, 2],
       processingState: _toProcessingState(event.processingState),
       playing: _playing,
-      updatePosition: event.updatePosition,
+      position: event.updatePosition,
       updateTime: event.updateTime,
       bufferedPosition: event.bufferedPosition,
       speed: 1.0,
