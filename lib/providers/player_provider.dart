@@ -161,12 +161,15 @@ class PlayerProvider extends ChangeNotifier {
         album: song.album,
         artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
       );
-      await _player.setAudioSource(
-        AudioSource.uri(
-          Uri.file(song.path),
-          tag: mediaItem,
-        ),
+      final source = ConcatenatingAudioSource(
+        children: [
+          AudioSource.uri(
+            Uri.file(song.path),
+            tag: mediaItem,
+          ),
+        ],
       );
+      await _player.setAudioSource(source);
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
