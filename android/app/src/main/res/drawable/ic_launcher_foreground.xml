@@ -4,24 +4,36 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 音符头 -->
+
+    <!-- 低音符杆 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M46,34 L46,60"/>
+
+    <!-- 高音符杆 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M70,34 L70,54"/>
+
+    <!-- 横梁 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M46,34 L70,34"/>
+
+    <!-- 低音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M62,40m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
-    <!-- 音符杆 -->
+        android:pathData="M42,54 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+
+    <!-- 高音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M70,40v28h-4v-28z"/>
-    <!-- 第二个音符头 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,66m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0"/>
-    <!-- 第二个音符杆 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M49,40v26h-4v-26z"/>
-    <!-- 横连线 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M45,38h25v4h-25z"/>
+        android:pathData="M66,48 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+
 </vector>
