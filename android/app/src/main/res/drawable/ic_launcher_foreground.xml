@@ -8,32 +8,32 @@
     <!-- 低音符杆 -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="12"
         android:strokeLineCap="round"
-        android:pathData="M45,34 L45,72"/>
+        android:pathData="M42,28 L42,72"/>
 
     <!-- 高音符杆 -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="12"
         android:strokeLineCap="round"
-        android:pathData="M69,34 L69,58"/>
+        android:pathData="M82,28 L82,66"/>
 
     <!-- 横梁 -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="12"
         android:strokeLineCap="round"
-        android:pathData="M45,34 L69,34"/>
+        android:pathData="M42,28 L82,28"/>
 
     <!-- 低音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M42,66 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+        android:pathData="M34,58 a14,14 0,1 1,0 28 a14,14 0,1 1,0 -28"/>
 
     <!-- 高音符头 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M66,52 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+        android:pathData="M74,52 a14,14 0,1 1,0 28 a14,14 0,1 1,0 -28"/>
 
 </vector>
