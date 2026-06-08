@@ -132,7 +132,7 @@ class _CoverImageState extends State<CoverImage> {
         fit: BoxFit.cover,
         cacheWidth: cachePx,
         cacheHeight: cachePx,
-        errorBuilder: (_, __, ___) => _placeholder(colors),
+        errorBuilder: (_, _, _) => _placeholder(colors),
       );
     } else if (_embeddedBytes != null) {
       // 2. 嵌入式封面
@@ -144,7 +144,7 @@ class _CoverImageState extends State<CoverImage> {
         cacheWidth: cachePx,
         cacheHeight: cachePx,
         gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => _placeholder(colors),
+        errorBuilder: (_, _, _) => _placeholder(colors),
       );
     } else {
       // 3. 占位

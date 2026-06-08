@@ -18,7 +18,7 @@ const _darkOnSurfaceVariant = Color(0xFFA1A6AD);
 const _darkOutline = Color(0xFF34383E);
 
 ThemeData buildLightTheme({String? fontFamily}) {
-  final colorScheme = const ColorScheme.light(
+  const colorScheme = ColorScheme.light(
     primary: _primary,
     onPrimary: Colors.white,
     primaryContainer: Color(0xFFBBDEFB),
@@ -48,7 +48,7 @@ ThemeData buildLightTheme({String? fontFamily}) {
 }
 
 ThemeData buildDarkTheme({String? fontFamily}) {
-  final colorScheme = const ColorScheme.dark(
+  const colorScheme = ColorScheme.dark(
     primary: Color(0xFF64B5F6),
     onPrimary: Color(0xFF0D47A1),
     primaryContainer: Color(0xFF1565C0),

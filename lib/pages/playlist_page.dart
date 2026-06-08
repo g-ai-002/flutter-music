@@ -81,7 +81,7 @@ class PlaylistPage extends StatelessWidget {
                     ? const _EmptyState()
                     : ListView.separated(
                         itemCount: songs.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const Divider(height: 0.5, indent: 76),
                         itemBuilder: (context, i) {
                           final s = songs[i];
@@ -139,7 +139,7 @@ class _Header extends StatelessWidget {
                 Text(
                   missingCount == 0
                       ? '${playableSongs.length} 首'
-                      : '${playableSongs.length} 首（${missingCount} 首已失效）',
+                      : '${playableSongs.length} 首（$missingCount 首已失效）',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -188,7 +188,7 @@ class _SongRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge),
                   const SizedBox(height: 2),
-                  Text('${song.artist} · ${song.album}',
+                  Text('$song.artist · $song.album',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall),

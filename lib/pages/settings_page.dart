@@ -19,13 +19,13 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('设置')),
       body: ListView(
         children: [
-          _SectionHeader('扫描目录'),
+          const _SectionHeader('扫描目录'),
           const _ScanDirSection(),
           const Divider(height: 0.5),
-          _SectionHeader('外观'),
+          const _SectionHeader('外观'),
           const _DarkModeTile(),
           const Divider(height: 0.5),
-          _SectionHeader('关于'),
+          const _SectionHeader('关于'),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('版本'),

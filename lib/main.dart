@@ -60,7 +60,7 @@ Future<void> main() async {
           androidStopForegroundOnPause: true,
           androidShowNotificationBadge: false,
           androidNotificationIcon: 'drawable/ic_notification_like',
-          notificationColor: const Color(0xFF1DB954),
+          notificationColor: Color(0xFF1DB954),
         ),
       );
     } catch (e, st) {
@@ -111,7 +111,7 @@ class MusicApp extends StatelessWidget {
             };
             return p;
           },
-          update: (_, __, ___, prev) => prev!,
+          update: (_, _, _, prev) => prev!,
         ),
       ],
       child: Consumer<SettingsProvider>(
@@ -149,13 +149,6 @@ class _BootState extends State<_Boot> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Android 启动时请求媒体权限（音频 + 图片 + 通知），确保封面图片可读取、通知栏可显示
-      if (Platform.isAndroid) {
-        await Permission.audio.request();
-        await Permission.photos.request();
-        await Permission.notification.request();
-      }
-
       final library = context.read<LibraryProvider>();
       final settings = context.read<SettingsProvider>();
       final player = context.read<PlayerProvider>();
@@ -163,6 +156,13 @@ class _BootState extends State<_Boot> {
       // 注册通知栏按钮回调
       MusicAudioHandler.onSkipToNext = () => player.next();
       MusicAudioHandler.onSkipToPrevious = () => player.previous();
+
+      // Android 启动时请求媒体权限（音频 + 图片 + 通知），确保封面图片可读取、通知栏可显示
+      if (Platform.isAndroid) {
+        await Permission.audio.request();
+        await Permission.photos.request();
+        await Permission.notification.request();
+      }
 
       // 用缓存歌曲列表恢复队列（不自动播放）
       if (library.songs.isNotEmpty) {
@@ -173,7 +173,7 @@ class _BootState extends State<_Boot> {
       if (settings.scanDirs.isNotEmpty && library.songs.isEmpty) {
         await library.scan(settings.scanDirs);
         if (mounted) {
-          await context.read<PlayerProvider>().setQueue(library.songs, resumeLast: true);
+          await player.setQueue(library.songs, resumeLast: true);
         }
       }
     });

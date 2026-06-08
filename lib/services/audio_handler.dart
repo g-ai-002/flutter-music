@@ -16,14 +16,10 @@ class MusicAudioHandler extends BaseAudioHandler {
   static MusicAudioHandler? _instance;
 
   bool _playing = false;
-  ja.PlaybackEvent _lastEvent = ja.PlaybackEvent();
 
   MusicAudioHandler(this._player) {
     _instance = this;
-    _subs.add(_player.playbackEventStream.listen((e) {
-      _lastEvent = e;
-      _onPlaybackEvent(e);
-    }));
+    _subs.add(_player.playbackEventStream.listen(_onPlaybackEvent));
     _subs.add(_player.playingStream.listen((p) {
       _playing = p;
     }));
@@ -66,7 +62,7 @@ class MusicAudioHandler extends BaseAudioHandler {
       androidCompactActionIndices: const [0, 1, 2],
       processingState: _toProcessingState(event.processingState),
       playing: _playing,
-      position: event.updatePosition,
+      updatePosition: event.updatePosition,
       updateTime: event.updateTime,
       bufferedPosition: event.bufferedPosition,
       speed: 1.0,

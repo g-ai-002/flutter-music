@@ -16,12 +16,17 @@ class PlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.keyboard_arrow_down),
+          tooltip: '收起',
+          onPressed: () => Navigator.maybePop(context),
+        ),
         title: Consumer<PlayerProvider>(
-          builder: (_, p, __) => Text(p.currentSong?.title ?? '正在播放'),
+          builder: (_, p, _) => Text(p.currentSong?.title ?? '正在播放'),
         ),
         actions: [
           Consumer<PlayerProvider>(
-            builder: (_, p, __) {
+            builder: (_, p, _) {
               final s = p.currentSong;
               if (s == null) return const SizedBox.shrink();
               return PopupMenuButton<String>(
@@ -80,7 +85,7 @@ class PlayerPage extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
         Consumer<PlayerProvider>(
-          builder: (_, p, __) {
+          builder: (_, p, _) {
             _showErrorIfAny(context, p);
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -115,7 +120,7 @@ class PlayerPage extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Consumer<PlayerProvider>(
-                        builder: (_, p, __) {
+                        builder: (_, p, _) {
                           _showErrorIfAny(context, p);
                           return AspectRatio(
                             aspectRatio: 1,
@@ -148,7 +153,7 @@ class _SongInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<PlayerProvider>(
-      builder: (_, p, __) {
+      builder: (_, p, _) {
         final s = p.currentSong;
         if (s == null) return const SizedBox.shrink();
         final theme = Theme.of(context);

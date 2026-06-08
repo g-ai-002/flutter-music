@@ -20,7 +20,7 @@ class MiniPlayer extends StatelessWidget {
     return Selector<PlayerProvider, Object?>(
       // 仅在切歌 / 队列变化（影响 currentSong）时重建
       selector: (_, p) => p.currentSong?.path,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         final player = context.read<PlayerProvider>();
         final song = player.currentSong;
         if (song == null) return const SizedBox.shrink();

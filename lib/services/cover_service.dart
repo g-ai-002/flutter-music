@@ -10,10 +10,10 @@ import 'log_service.dart';
 /// - 同一文件可能被列表 / MiniPlayer / 大播放器同时请求，做去重；
 /// - 失败结果同样缓存为 `null`，避免反复重试。
 class CoverService {
-  CoverService._({this.maxEntries = 64});
+  CoverService._();
   static final CoverService instance = CoverService._();
 
-  final int maxEntries;
+  static const int _maxEntries = 64;
   final Map<String, Uint8List?> _cache = <String, Uint8List?>{};
   final Map<String, Future<Uint8List?>> _pending = <String, Future<Uint8List?>>{};
 
@@ -63,7 +63,7 @@ class CoverService {
   void _put(String audioPath, Uint8List? bytes) {
     if (_cache.containsKey(audioPath)) {
       _cache.remove(audioPath);
-    } else if (_cache.length >= maxEntries) {
+    } else if (_cache.length >= _maxEntries) {
       // 删除最久未访问（map 头部）
       _cache.remove(_cache.keys.first);
     }

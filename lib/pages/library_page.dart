@@ -411,7 +411,7 @@ class _SongListView extends StatelessWidget {
         return ListView.separated(
           padding: EdgeInsets.zero,
           itemCount: songs.length,
-          separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 76),
+          separatorBuilder: (_, _) => const Divider(height: 0.5, indent: 76),
           itemBuilder: (context, i) {
             final s = songs[i];
             final active = snap.path == s.path;
@@ -457,7 +457,7 @@ class _PlaylistTab extends StatelessWidget {
               ListView.separated(
                 padding: const EdgeInsets.only(bottom: 88),
                 itemCount: items.length,
-                separatorBuilder: (_, __) => const Divider(height: 0.5, indent: 72),
+                separatorBuilder: (_, _) => const Divider(height: 0.5, indent: 72),
                 itemBuilder: (context, i) {
                   final pl = items[i];
                   return ListTile(
