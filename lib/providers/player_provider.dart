@@ -178,17 +178,13 @@ class PlayerProvider extends ChangeNotifier {
         artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
       );
       LogService.info('创建 AudioSource: ${song.path}');
-      final source = ConcatenatingAudioSource(
-        children: [
-          AudioSource.uri(
-            Uri.file(song.path),
-            tag: mediaItem,
-          ),
-        ],
+      LogService.info('调用 setFilePath...');
+      await _player.setFilePath(song.path,
+        tag: mediaItem,
+        initialPosition: seekTo ?? Duration.zero,
+        preload: true,
       );
-      LogService.info('调用 setAudioSource...');
-      await _player.setAudioSource(source);
-      LogService.info('setAudioSource 完成');
+      LogService.info('setFilePath 完成');
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
@@ -202,9 +198,6 @@ class PlayerProvider extends ChangeNotifier {
         LogService.warning('播放器就绪超时: ${song.path}');
         return _player.processingState;
       });
-      if (seekTo != null) {
-        await _player.seek(seekTo);
-      }
       if (autoPlay) await _player.play();
       onSongStart?.call(song);
       notifyListeners();
