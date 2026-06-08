@@ -6,7 +6,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.3.13';
+  static const String version = '0.3.14';
 
   // SharedPreferences keys (playlists 列表 JSON)
   static const String prefKeyPlaylists = 'playlists_v1';
@@ -15,6 +15,7 @@ class AppConstants {
   static const String prefKeyDarkMode = 'dark_mode';
   static const String prefKeyScanDirs = 'scan_dirs';
   static const String prefKeyLastSongPath = 'last_song_path';
+  static const String prefKeyLastPosition = 'last_position';
   static const String prefKeyPlayMode = 'play_mode';
   static const String prefKeyVolume = 'volume';
   static const String prefKeyFavorites = 'favorites_v1';

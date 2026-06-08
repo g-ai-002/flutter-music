@@ -53,6 +53,8 @@ class PlayerProvider extends ChangeNotifier {
   final List<StreamSubscription> _subs = [];
   late final VoidCallback _settingsListener;
 
+  Timer? _saveTimer;
+
   final Random _random = Random();
 
   PlayerProvider(this._storage, this._settings, {AudioPlayer? player})
@@ -80,6 +82,8 @@ class PlayerProvider extends ChangeNotifier {
         LogService.error('播放器错误: ${e.code} - ${e.message}');
         notifyListeners();
       }));
+
+    _saveTimer = Timer.periodic(const Duration(seconds: 10), (_) => _saveProgress());
   }
 
   /// 由外部注入：每次开始播放时回调（用于"最近播放"等横切关注点）
@@ -122,7 +126,8 @@ class PlayerProvider extends ChangeNotifier {
         final idx = _queue.indexWhere((s) => s.path == lastPath);
         if (idx >= 0) {
           _currentIndex = idx;
-          await _prepare(_queue[idx], autoPlay: false);
+          final resumePos = Duration(milliseconds: _storage.lastPosition);
+          await _prepare(_queue[idx], autoPlay: false, seekTo: resumePos);
         }
       }
     } else if (_currentIndex >= _queue.length) {
@@ -145,7 +150,7 @@ class PlayerProvider extends ChangeNotifier {
     await _prepare(song, autoPlay: true);
   }
 
-  Future<void> _prepare(Song song, {required bool autoPlay}) async {
+  Future<void> _prepare(Song song, {required bool autoPlay, Duration? seekTo}) async {
     _errorMessage = null;
     try {
       LogService.info('加载歌曲: ${song.path}');
@@ -175,6 +180,9 @@ class PlayerProvider extends ChangeNotifier {
       await _player.processingStateStream.firstWhere(
         (s) => s == ProcessingState.ready || s == ProcessingState.completed,
       );
+      if (seekTo != null) {
+        await _player.seek(seekTo);
+      }
       if (autoPlay) await _player.play();
       onSongStart?.call(song);
       notifyListeners();
@@ -188,6 +196,7 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> togglePlay() async {
     if (currentSong == null) return;
     if (playing) {
+      _saveProgress();
       await _player.pause();
     } else {
       await _player.play();
@@ -271,8 +280,17 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _saveProgress() {
+    final song = currentSong;
+    if (song != null && playing) {
+      _storage.setLastPosition(_position.value.inMilliseconds);
+    }
+  }
+
   @override
   void dispose() {
+    _saveTimer?.cancel();
+    _saveProgress();
     _settings.removeListener(_settingsListener);
     for (final s in _subs) {
       s.cancel();

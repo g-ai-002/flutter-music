@@ -59,6 +59,10 @@ class StorageService {
     }
   }
 
+  // ---- 上次播放位置（毫秒）----
+  int get lastPosition => _p.getInt(AppConstants.prefKeyLastPosition) ?? 0;
+  Future<void> setLastPosition(int ms) => _p.setInt(AppConstants.prefKeyLastPosition, ms.clamp(0, 2147483647));
+
   // ---- 播放模式: 0=列表循环 1=单曲循环 2=随机 ----
   int get playMode => _p.getInt(AppConstants.prefKeyPlayMode) ?? 0;
   Future<void> setPlayMode(int v) => _p.setInt(AppConstants.prefKeyPlayMode, v);
