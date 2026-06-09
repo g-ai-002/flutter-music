@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/song.dart';
 import '../utils/constants.dart';
+import 'animated_equalizer.dart';
 import 'cover_image.dart';
 import 'favorite_toggle_button.dart';
 import 'playlist_dialogs.dart';
@@ -69,11 +70,17 @@ class SongTile extends StatelessWidget {
             ],
             if (active) ...[
               const SizedBox(width: 8),
-              Icon(
-                playing ? Icons.graphic_eq : Icons.pause_circle_outline,
-                size: 18,
-                color: theme.colorScheme.primary,
-              ),
+              if (playing)
+                AnimatedEqualizer(
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                )
+              else
+                Icon(
+                  Icons.pause_circle_outline,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
             ],
             if (showFavorite)
               FavoriteToggleButton(
