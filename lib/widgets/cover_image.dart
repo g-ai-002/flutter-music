@@ -117,9 +117,6 @@ class _CoverImageState extends State<CoverImage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    // 按设备像素比计算实际像素，但上限 1024px 以控制内存
-    final cachePx = (widget.size * dpr).round().clamp(1, 1024);
 
     Widget child;
     final coverPath = widget.song?.coverPath ?? _runtimeCoverPath;
@@ -131,8 +128,6 @@ class _CoverImageState extends State<CoverImage> {
         width: widget.size,
         height: widget.size,
         fit: BoxFit.cover,
-        cacheWidth: cachePx,
-        cacheHeight: cachePx,
         errorBuilder: (_, _, _) => _placeholder(colors),
       );
     } else if (_embeddedBytes != null) {
@@ -142,8 +137,6 @@ class _CoverImageState extends State<CoverImage> {
         width: widget.size,
         height: widget.size,
         fit: BoxFit.cover,
-        cacheWidth: cachePx,
-        cacheHeight: cachePx,
         gaplessPlayback: true,
         errorBuilder: (_, _, _) => _placeholder(colors),
       );
