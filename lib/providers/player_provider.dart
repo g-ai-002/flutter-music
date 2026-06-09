@@ -116,6 +116,11 @@ class PlayerProvider extends ChangeNotifier {
   /// 最近一次播放错误消息（null 表示无错误），UI 层可用 SnackBar 展示
   String? get errorMessage => _errorMessage;
 
+  /// UI 展示错误后调用，避免同一条错误重复弹出
+  void clearError() {
+    _errorMessage = null;
+  }
+
   Duration get position => _position.value;
   Duration get duration => _duration.value;
   Lyrics get lyrics => _lyrics;
@@ -154,6 +159,7 @@ class PlayerProvider extends ChangeNotifier {
     // 切歌后随机序列从当前歌开始重建
     _shuffleOrder = const [];
     _shufflePos = -1;
+    notifyListeners(); // 先更新 UI，再异步加载
     await _prepare(song, autoPlay: true);
   }
 
@@ -293,6 +299,7 @@ class PlayerProvider extends ChangeNotifier {
     if (_queue.isEmpty) return;
     final idx = _resolveNextIndex();
     _currentIndex = idx;
+    notifyListeners(); // 先更新 UI，再异步加载
     await _prepare(_queue[idx], autoPlay: true);
   }
 
@@ -300,6 +307,7 @@ class PlayerProvider extends ChangeNotifier {
     if (_queue.isEmpty) return;
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
     _currentIndex = prev;
+    notifyListeners(); // 先更新 UI，再异步加载
     await _prepare(_queue[prev], autoPlay: true);
   }
 

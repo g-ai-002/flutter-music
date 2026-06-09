@@ -107,13 +107,15 @@ class _LibraryPageState extends State<LibraryPage>
               if (msg != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(msg),
-                        duration: const Duration(seconds: 4),
-                        action: SnackBarAction(label: '了解', onPressed: () {}),
-                      ),
-                    );
+                    ScaffoldMessenger.of(context)
+                      ..clearSnackBars()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(msg),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    player.clearError();
                   }
                 });
               }
