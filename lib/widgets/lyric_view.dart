@@ -78,38 +78,41 @@ class _LyricViewState extends State<LyricView> {
                     }
                   });
                 }
-                return ListView.builder(
-                  controller: _ctrl,
-                  padding: EdgeInsets.only(top: topPad, bottom: topPad),
-                  itemCount: lyrics.lines.length,
-                  itemBuilder: (context, i) {
-                    final line = lyrics.lines[i];
-                    final isActive = i == activeIndex;
-                    return SizedBox(
-                      height: widget.lineHeight,
-                      child: Padding(
-                        padding: widget.padding,
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 220),
-                          style: TextStyle(
-                            color: isActive
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                            fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
-                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                            height: 1.4,
-                          ),
-                          textAlign: widget.textAlign,
-                          child: Text(
-                            line.text,
+                return ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                  child: ListView.builder(
+                    controller: _ctrl,
+                    padding: EdgeInsets.only(top: topPad, bottom: topPad),
+                    itemCount: lyrics.lines.length,
+                    itemBuilder: (context, i) {
+                      final line = lyrics.lines[i];
+                      final isActive = i == activeIndex;
+                      return SizedBox(
+                        height: widget.lineHeight,
+                        child: Padding(
+                          padding: widget.padding,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 220),
+                            style: TextStyle(
+                              color: isActive
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                              fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                              height: 1.4,
+                            ),
                             textAlign: widget.textAlign,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              line.text,
+                              textAlign: widget.textAlign,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             );
