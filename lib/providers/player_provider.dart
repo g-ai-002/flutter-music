@@ -53,6 +53,7 @@ class PlayerProvider extends ChangeNotifier {
   String? _errorMessage;
 
   bool _preparing = false;
+  int _prepareGeneration = 0;
   final List<String> _tempFiles = [];
 
   final List<StreamSubscription> _subs = [];
@@ -157,30 +158,42 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> _prepare(Song song, {required bool autoPlay, Duration? seekTo}) async {
+    // 取消正在进行的加载，避免旧请求阻塞新请求
     if (_preparing) {
-      LogService.warning('播放器正在加载中，忽略重复请求');
-      return;
+      LogService.warning('播放器正在加载中，取消当前加载并开始新的请求');
+      _prepareGeneration++;
+      try {
+        await _player.stop();
+      } catch (_) {
+        // stop 可能因播放器状态异常而失败，忽略
+      }
     }
     _preparing = true;
     _errorMessage = null;
+    _prepareGeneration++;
+    final gen = _prepareGeneration;
+
     Timer? watchdog;
-    watchdog = Timer(const Duration(seconds: 60), () {
-      if (_preparing) {
-        _preparing = false;
+    watchdog = Timer(const Duration(seconds: 20), () {
+      if (_prepareGeneration == gen) {
         _errorMessage = '加载超时，请重试';
-        LogService.error('播放器加载超时，强制重置: ${song.path}');
+        LogService.error('播放器加载超时: ${song.path}');
         notifyListeners();
+        _preparing = false;
       }
     });
     try {
       LogService.info('加载歌曲: ${song.path}');
       final file = File(song.path);
       if (!await file.exists()) {
+        if (_prepareGeneration != gen) return;
         _errorMessage = '文件不存在: ${song.path}';
         LogService.warning(_errorMessage!);
         notifyListeners();
         return;
       }
+      if (_prepareGeneration != gen) return;
+
       final mediaItem = MediaItem(
         id: song.path,
         title: song.title,
@@ -189,29 +202,37 @@ class PlayerProvider extends ChangeNotifier {
         artUri: song.coverPath != null ? Uri.file(song.coverPath!) : null,
       );
       await _loadAudio(song.path, mediaItem, seekTo);
+      if (_prepareGeneration != gen) return;
+
       await _storage.setLastSongPath(song.path);
       _lyrics = song.lyricPath != null
           ? await LyricParser.parseFile(song.lyricPath!)
           : Lyrics.empty;
       _lastLyricText = '';
       _currentLyricNotifier.value = '';
-      // 等待播放器就绪，最多等 30 秒
+
+      if (_prepareGeneration != gen) return;
       await _player.processingStateStream.firstWhere(
         (s) => s == ProcessingState.ready || s == ProcessingState.completed,
-      ).timeout(const Duration(seconds: 30), onTimeout: () {
+      ).timeout(const Duration(seconds: 15), onTimeout: () {
         LogService.warning('播放器就绪超时: ${song.path}');
         return _player.processingState;
       });
+
+      if (_prepareGeneration != gen) return;
       if (autoPlay) await _player.play();
       onSongStart?.call(song);
       notifyListeners();
     } catch (e, st) {
+      if (_prepareGeneration != gen) return;
       _errorMessage = '加载失败: $e';
       LogService.error('加载歌曲失败: ${song.path}', e, st);
       notifyListeners();
     } finally {
-      watchdog.cancel();
-      _preparing = false;
+      if (_prepareGeneration == gen) {
+        watchdog.cancel();
+        _preparing = false;
+      }
     }
   }
 
@@ -235,7 +256,7 @@ class PlayerProvider extends ChangeNotifier {
         tag: mediaItem,
         initialPosition: seekTo ?? Duration.zero,
         preload: true,
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       LogService.info('setFilePath 完成');
       return;
     } on TimeoutException {
@@ -249,7 +270,7 @@ class PlayerProvider extends ChangeNotifier {
         tag: mediaItem,
         initialPosition: seekTo ?? Duration.zero,
         preload: true,
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       LogService.info('临时文件加载完成: $tempPath');
       return;
     }
