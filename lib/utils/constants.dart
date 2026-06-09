@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// 应用全局常量
 class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.3.20';
+  static const String version = '0.3.22';
 
   // SharedPreferences keys (playlists 列表 JSON)
   static const String prefKeyPlaylists = 'playlists_v1';
@@ -42,6 +43,34 @@ class AppConstants {
 
   // 最近播放保留条数
   static const int maxRecentPlays = 100;
+}
+
+/// 检测路径是否包含非 ASCII 字符（如中文）
+bool hasNonAscii(String path) {
+  return path.contains(RegExp(r'[^\x00-\x7F]'));
+}
+
+/// 判断当前平台是否需要使用临时文件处理中文路径
+///
+/// Windows 平台的底层库对 UTF-8 路径处理有兼容性问题，
+/// Android/iOS/macOS/Linux 等平台本身支持 UTF-8，无需此方案。
+bool needsAsciiPathWorkaround() {
+  return Platform.isWindows;
+}
+
+/// 为非 ASCII 路径创建临时副本，返回临时文件路径；ASCII 路径或非 Windows 平台原样返回
+///
+/// 用于解决 Windows 上某些库（audio_metadata_reader、just_audio）
+/// 无法正确处理含中文路径的问题。
+Future<String> ensureAsciiPath(String sourcePath) async {
+  if (!needsAsciiPathWorkaround()) return sourcePath;
+  if (!hasNonAscii(sourcePath)) return sourcePath;
+  final dir = await getTemporaryDirectory();
+  final ext = p.extension(sourcePath);
+  final tempName = 'tmp_${DateTime.now().microsecondsSinceEpoch}$ext';
+  final tempPath = p.join(dir.path, tempName);
+  await File(sourcePath).copy(tempPath);
+  return tempPath;
 }
 
 /// 通用时长格式化：`mm:ss` 或 `h:mm:ss`

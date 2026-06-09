@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import '../utils/constants.dart';
 import 'log_service.dart';
 
 /// 嵌入式封面读取与内存 LRU 缓存
@@ -42,19 +43,33 @@ class CoverService {
 
   Future<Uint8List?> _read(String audioPath) async {
     Uint8List? bytes;
+    String? tempPath;
     try {
       final file = File(audioPath);
       if (!await file.exists()) {
         _put(audioPath, null);
         return null;
       }
-      final meta = readMetadata(file, getImage: true);
+      // 对于中文路径，先复制到临时文件再读取
+      File metaFile = file;
+      if (hasNonAscii(audioPath)) {
+        tempPath = await ensureAsciiPath(audioPath);
+        metaFile = File(tempPath);
+      }
+      final meta = readMetadata(metaFile, getImage: true);
       final pictures = meta.pictures;
       if (pictures.isNotEmpty) {
         bytes = pictures.first.bytes;
       }
     } catch (e) {
       LogService.warning('读取嵌入封面失败: $audioPath | $e');
+    } finally {
+      // 清理临时文件
+      if (tempPath != null) {
+        try {
+          await File(tempPath).delete();
+        } catch (_) {}
+      }
     }
     _put(audioPath, bytes);
     return bytes;

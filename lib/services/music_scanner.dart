@@ -87,14 +87,28 @@ class MusicScanner {
     } catch (_) {}
 
     // 元数据读取（失败时降级使用文件名）
+    // 对于中文路径，先复制到临时文件再读取
+    String? tempPath;
+    File metaFile = file;
     try {
-      final meta = readMetadata(file, getImage: false);
+      if (hasNonAscii(path)) {
+        tempPath = await ensureAsciiPath(path);
+        metaFile = File(tempPath);
+      }
+      final meta = readMetadata(metaFile, getImage: false);
       if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
       if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
       if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
       duration = meta.duration;
     } catch (e) {
       LogService.warning('读取元数据失败 (${p.basename(path)}): $e');
+    } finally {
+      // 及时清理临时文件
+      if (tempPath != null) {
+        try {
+          await File(tempPath).delete();
+        } catch (_) {}
+      }
     }
 
     // 同目录封面（优先同名图片，再按预定义文件名匹配）

@@ -4,12 +4,12 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart' show MediaItem;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import '../models/lyric.dart';
 import '../models/song.dart';
 import '../services/log_service.dart';
 import '../services/lyric_parser.dart';
 import '../services/storage_service.dart';
+import '../utils/constants.dart';
 import 'settings_provider.dart';
 
 enum PlayMode { loopAll, single, shuffle }
@@ -218,8 +218,20 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> _loadAudio(String path, MediaItem mediaItem, Duration? seekTo) async {
     LogService.info('创建 AudioSource: $path');
     LogService.info('调用 setFilePath...');
+
+    // 仅在 Windows 平台检测中文路径，避免等待超时
+    // Android/iOS/macOS/Linux 本身支持 UTF-8 路径，无需此方案
+    String actualPath = path;
+    if (needsAsciiPathWorkaround() && hasNonAscii(path)) {
+      LogService.info('路径含非 ASCII 字符，创建临时文件...');
+      final tempPath = await ensureAsciiPath(path);
+      _tempFiles.add(tempPath);
+      actualPath = tempPath;
+      LogService.info('临时文件已创建: $tempPath');
+    }
+
     try {
-      await _player.setFilePath(path,
+      await _player.setFilePath(actualPath,
         tag: mediaItem,
         initialPosition: seekTo ?? Duration.zero,
         preload: true,
@@ -229,38 +241,19 @@ class PlayerProvider extends ChangeNotifier {
     } on TimeoutException {
       LogService.warning('setFilePath 超时: $path');
     }
-    // 如果路径包含非 ASCII 字符，复制到临时目录重试
-    if (path.contains(RegExp(r'[^\x00-\x7F]'))) {
-      LogService.info('路径含非 ASCII 字符，尝试 ASCII 临时文件...');
-      final tempPath = await _createAsciiTempFile(path);
-      if (tempPath != null) {
-        _tempFiles.add(tempPath);
-        await _player.setFilePath(tempPath,
-          tag: mediaItem,
-          initialPosition: seekTo ?? Duration.zero,
-          preload: true,
-        ).timeout(const Duration(seconds: 25));
-        LogService.info('临时文件加载完成: $tempPath');
-        return;
-      }
+    // 如果主路径失败且未使用过临时文件，再尝试创建（仅 Windows）
+    if (actualPath == path && needsAsciiPathWorkaround()) {
+      final tempPath = await ensureAsciiPath(path);
+      _tempFiles.add(tempPath);
+      await _player.setFilePath(tempPath,
+        tag: mediaItem,
+        initialPosition: seekTo ?? Duration.zero,
+        preload: true,
+      ).timeout(const Duration(seconds: 25));
+      LogService.info('临时文件加载完成: $tempPath');
+      return;
     }
     throw TimeoutException('无法加载: $path');
-  }
-
-  Future<String?> _createAsciiTempFile(String sourcePath) async {
-    try {
-      final dir = await getTemporaryDirectory();
-      final parts = sourcePath.split('.');
-      final ext = parts.length > 1 ? parts.last : 'tmp';
-      final tempName = 'flutter_music_${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final tempPath = '${dir.path}${Platform.pathSeparator}$tempName';
-      await File(sourcePath).copy(tempPath);
-      LogService.info('临时文件已创建: $tempPath');
-      return tempPath;
-    } catch (e) {
-      LogService.warning('创建临时文件失败: $e');
-      return null;
-    }
   }
 
   Future<void> togglePlay() async {
