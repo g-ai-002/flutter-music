@@ -118,7 +118,8 @@ class _CoverImageState extends State<CoverImage> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final cachePx = (widget.size * dpr).round();
+    // 按设备像素比计算实际像素，但上限 1024px 以控制内存
+    final cachePx = (widget.size * dpr).round().clamp(1, 1024);
 
     Widget child;
     final coverPath = widget.song?.coverPath ?? _runtimeCoverPath;
