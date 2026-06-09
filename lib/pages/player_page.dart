@@ -139,7 +139,6 @@ class PlayerPage extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 6,
                 child: const LyricView(),
               ),
             ],
