@@ -112,26 +112,30 @@ class PlayerPage extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                flex: 5,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Consumer<PlayerProvider>(
-                        builder: (_, p, _) {
-                          _showErrorIfAny(context, p);
-                          return AspectRatio(
-                            aspectRatio: 1,
-                            child: CoverImage(song: p.currentSong, size: 400, radius: 16),
-                          );
-                        },
-                      ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Consumer<PlayerProvider>(
+                            builder: (_, p, _) {
+                              _showErrorIfAny(context, p);
+                              return AspectRatio(
+                                aspectRatio: 1,
+                                child: CoverImage(song: p.currentSong, size: 400, radius: 16),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const _SongInfo(),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    const _SongInfo(),
-                  ],
+                  ),
                 ),
               ),
               Expanded(
