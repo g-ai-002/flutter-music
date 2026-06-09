@@ -65,18 +65,23 @@ class _LyricViewState extends State<LyricView> {
         final player = context.read<PlayerProvider>();
         return LayoutBuilder(
           builder: (context, constraints) {
-            final topPad = constraints.maxHeight / 2 - widget.lineHeight / 2;
+            final viewportH = constraints.maxHeight;
             return ValueListenableBuilder<Duration>(
               valueListenable: player.positionListenable,
               builder: (context, pos, _) {
-                final activeIndex = lyrics.indexAt(pos);
-                if (activeIndex != _lastIndex) {
-                  _lastIndex = activeIndex;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && activeIndex >= 0) {
-                      _scrollTo(activeIndex, constraints.maxHeight);
-                    }
-                  });
+                final idx = lyrics.indexAt(pos);
+                final waitingFirst = idx == -1 && lyrics.lines.isNotEmpty;
+                final topPad = waitingFirst
+                    ? viewportH / 2 + widget.lineHeight / 2
+                    : viewportH / 2 - widget.lineHeight / 2;
+
+                if (idx != _lastIndex) {
+                  _lastIndex = idx;
+                  if (idx >= 0) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _scrollTo(idx, viewportH);
+                    });
+                  }
                 }
                 return ScrollConfiguration(
                   behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -86,7 +91,7 @@ class _LyricViewState extends State<LyricView> {
                     itemCount: lyrics.lines.length,
                     itemBuilder: (context, i) {
                       final line = lyrics.lines[i];
-                      final isActive = i == activeIndex;
+                      final isActive = i == idx;
                       return SizedBox(
                         height: widget.lineHeight,
                         child: Padding(

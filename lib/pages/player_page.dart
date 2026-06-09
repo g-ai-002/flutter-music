@@ -14,52 +14,60 @@ class PlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down),
-          tooltip: '收起',
-          onPressed: () => Navigator.maybePop(context),
-        ),
-        title: Consumer<PlayerProvider>(
-          builder: (_, p, _) => Text(p.currentSong?.title ?? '正在播放'),
-        ),
-        actions: [
-          Consumer<PlayerProvider>(
-            builder: (_, p, _) {
-              final s = p.currentSong;
-              if (s == null) return const SizedBox.shrink();
-              return PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                tooltip: '更多操作',
-                onSelected: (v) {
-                  if (v == 'add_playlist') {
-                    showAddToPlaylistSheet(context, songPaths: [s.path]);
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'add_playlist',
-                    child: ListTile(
-                      leading: Icon(Icons.playlist_add),
-                      title: Text('添加到歌单'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, c) {
+        final wide = c.maxWidth >= 600;
+        final compact = wide && c.maxHeight < 500;
+        return Scaffold(
+          appBar: compact
+              ? null
+              : AppBar(
+                  leading: IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    tooltip: '收起',
+                    onPressed: () => Navigator.maybePop(context),
                   ),
-                ],
-              );
-            },
+                  title: Consumer<PlayerProvider>(
+                    builder: (_, p, _) => Text(p.currentSong?.title ?? '正在播放'),
+                  ),
+                  actions: [
+                    Consumer<PlayerProvider>(
+                      builder: (_, p, _) {
+                        final s = p.currentSong;
+                        if (s == null) return const SizedBox.shrink();
+                        return PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          tooltip: '更多操作',
+                          onSelected: (v) {
+                            if (v == 'add_playlist') {
+                              showAddToPlaylistSheet(context, songPaths: [s.path]);
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'add_playlist',
+                              child: ListTile(
+                                leading: Icon(Icons.playlist_add),
+                                title: Text('添加到歌单'),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+          body: SafeArea(
+            child: compact
+                ? _buildCompact(context, theme)
+                : wide
+                    ? _buildWide(context)
+                    : _buildNarrow(context),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, c) {
-            final wide = c.maxWidth >= 600;
-            return wide ? _buildWide(context) : _buildNarrow(context);
-          },
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -148,6 +156,118 @@ class PlayerPage extends StatelessWidget {
         ),
         const _ControlPanel(),
       ],
+    );
+  }
+
+  /// 紧凑横屏模式：高度不足以完整显示左半部分时启用
+  ///
+  /// 隐藏 AppBar 和底部操作栏，左半仅封面，右半顶部为歌曲信息+控制按钮，
+  /// 下方全部留给歌词滚动。
+  Widget _buildCompact(BuildContext context, ThemeData theme) {
+    return Consumer<PlayerProvider>(
+      builder: (context, p, _) {
+        _showErrorIfAny(context, p);
+        final s = p.currentSong;
+        return Row(
+          children: [
+            // 左半：仅封面，上下至少 16dp 间距
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: CoverImage(song: s, size: 300, radius: 12),
+                  ),
+                ),
+              ),
+            ),
+            // 右半：信息 + 控制 + 歌词
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(40, 20, 40, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 歌曲信息 + 控制按钮：按钮撑满两行高度
+                    if (s != null)
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 左侧：歌名 + 艺术家·专辑
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    s.title,
+                                    style: theme.textTheme.titleMedium,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${s.artist} · ${s.album}',
+                                    style: theme.textTheme.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // 右侧：控制按钮（与左侧等高度，内部居中）
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                PlayingStateBuilder(
+                                  player: p,
+                                  builder: (context, playing, _) => IconButton(
+                                    tooltip: playing ? '暂停' : '播放',
+                                    icon: Icon(
+                                      playing
+                                          ? Icons.pause_circle_filled
+                                          : Icons.play_circle_fill,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    iconSize: 32,
+                                    onPressed: p.togglePlay,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: '下一首',
+                                  icon: const Icon(Icons.skip_next),
+                                  iconSize: 32,
+                                  onPressed: p.next,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                IconButton(
+                                  tooltip: '收起',
+                                  icon: const Icon(Icons.keyboard_arrow_down),
+                                  iconSize: 32,
+                                  onPressed: () => Navigator.maybePop(context),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (s != null) const SizedBox(height: 8),
+                    // 下方：歌词滚动
+                    const Expanded(child: LyricView()),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
