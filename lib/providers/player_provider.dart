@@ -56,7 +56,7 @@ class PlayerProvider extends ChangeNotifier {
   int _prepareGeneration = 0;
   final List<String> _tempFiles = [];
 
-  /// 防抖定时器：用户停止切歌 2 秒后才真正加载目标歌曲
+  /// 防抖定时器：用户停止切歌 1 秒后才真正加载目标歌曲
   Timer? _debounceTimer;
 
   final List<StreamSubscription> _subs = [];
@@ -173,6 +173,9 @@ class PlayerProvider extends ChangeNotifier {
     _shuffleOrder = const [];
     _shufflePos = -1;
     _errorMessage = null;
+    _lyrics = Lyrics.empty;
+    _lastLyricText = '';
+    _currentLyricNotifier.value = '';
     _position.value = Duration.zero;
     _duration.value = song.duration ?? Duration.zero;
     notifyListeners();
@@ -333,6 +336,9 @@ class PlayerProvider extends ChangeNotifier {
     await _player.pause();
     _currentIndex = idx;
     _errorMessage = null;
+    _lyrics = Lyrics.empty;
+    _lastLyricText = '';
+    _currentLyricNotifier.value = '';
     _position.value = Duration.zero;
     _duration.value = _queue[idx].duration ?? Duration.zero;
     notifyListeners();
@@ -348,6 +354,9 @@ class PlayerProvider extends ChangeNotifier {
     await _player.pause();
     _currentIndex = prev;
     _errorMessage = null;
+    _lyrics = Lyrics.empty;
+    _lastLyricText = '';
+    _currentLyricNotifier.value = '';
     _position.value = Duration.zero;
     _duration.value = _queue[prev].duration ?? Duration.zero;
     notifyListeners();
@@ -409,6 +418,9 @@ class PlayerProvider extends ChangeNotifier {
       final idx = _resolveNextIndex();
       _currentIndex = idx;
       _errorMessage = null;
+      _lyrics = Lyrics.empty;
+      _lastLyricText = '';
+      _currentLyricNotifier.value = '';
       _position.value = Duration.zero;
       _duration.value = _queue[idx].duration ?? Duration.zero;
       notifyListeners();

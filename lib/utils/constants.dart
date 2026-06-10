@@ -7,7 +7,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.3.39';
+  static const String version = '0.3.40';
 
   // SharedPreferences keys (playlists 列表 JSON)
   static const String prefKeyPlaylists = 'playlists_v1';
@@ -46,7 +46,7 @@ class AppConstants {
 }
 
 /// 切歌防抖时长：用户停止切歌后等待此时间才真正加载音频
-const Duration debounceDuration = Duration(seconds: 2);
+const Duration debounceDuration = Duration(seconds: 1);
 
 /// 检测路径是否包含非 ASCII 字符（如中文）
 bool hasNonAscii(String path) {

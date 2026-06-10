@@ -37,7 +37,7 @@ class _LyricViewState extends State<LyricView> {
 
   void _scrollTo(int index, double viewportHeight) {
     if (!_ctrl.hasClients) return;
-    final target = index * widget.lineHeight;
+    final target = (index + 1) * widget.lineHeight;
     final clamped = target.clamp(0.0, _ctrl.position.maxScrollExtent);
     _ctrl.animateTo(
       clamped,
@@ -54,6 +54,29 @@ class _LyricViewState extends State<LyricView> {
       selector: (_, p) => p.lyrics,
       builder: (context, lyrics, _) {
         if (lyrics.isEmpty) {
+          return Center(
+            child: Text(
+              '暂无歌词',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
+        // 过滤掉首个有时间戳的歌词行之前的所有空行/段落标记，
+        // 确保第一行就是真正有时间戳的歌词，后续空行保留作为段落分隔
+        int firstReal = 0;
+        while (firstReal < lyrics.lines.length &&
+            lyrics.lines[firstReal].text.isEmpty) {
+          firstReal++;
+        }
+        final displayLines = <LyricLine>[];
+        final rawToDisplay = List<int?>.filled(lyrics.lines.length, null);
+        for (int i = firstReal; i < lyrics.lines.length; i++) {
+          rawToDisplay[i] = displayLines.length;
+          displayLines.add(lyrics.lines[i]);
+        }
+        if (displayLines.isEmpty) {
           return Center(
             child: Text(
               '暂无歌词',
@@ -80,11 +103,10 @@ class _LyricViewState extends State<LyricView> {
             return ValueListenableBuilder<Duration>(
               valueListenable: player.positionListenable,
               builder: (context, pos, _) {
-                final idx = lyrics.indexAt(pos);
-                final waitingFirst = idx == -1 && lyrics.lines.isNotEmpty;
-                final topPad = waitingFirst
-                    ? viewportH / 2 + widget.lineHeight / 2
-                    : viewportH / 2 - widget.lineHeight / 2;
+                final rawIdx = lyrics.indexAt(pos);
+                final idx = rawIdx >= 0 ? (rawToDisplay[rawIdx] ?? -1) : -1;
+                // 首行始终位于中间行下一行，通过 scroll 偏移对齐到中间高亮位
+                final topPad = viewportH / 2 + widget.lineHeight / 2;
 
                 if (idx != _lastIndex) {
                   _lastIndex = idx;
@@ -99,36 +121,36 @@ class _LyricViewState extends State<LyricView> {
                   child: ListView.builder(
                     controller: _ctrl,
                     padding: EdgeInsets.only(top: topPad, bottom: topPad),
-                    itemCount: lyrics.lines.length,
+                    itemCount: displayLines.length,
                     itemBuilder: (context, i) {
-                      final line = lyrics.lines[i];
+                      final line = displayLines[i];
                       final isActive = i == idx;
                       return SizedBox(
-                        height: widget.lineHeight,
-                        child: Padding(
-                          padding: widget.padding,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 220),
-                            style: TextStyle(
-                              color: isActive
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant,
-                              fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
-                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                              height: 1.4,
-                            ),
-                            textAlign: widget.textAlign,
-                            child: Text(
-                              line.text,
+                          height: widget.lineHeight,
+                          child: Padding(
+                            padding: widget.padding,
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 220),
+                              style: TextStyle(
+                                color: isActive
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontSize: isActive ? widget.activeFontSize : widget.normalFontSize,
+                                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                                height: 1.4,
+                              ),
                               textAlign: widget.textAlign,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              child: Text(
+                                line.text,
+                                textAlign: widget.textAlign,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
                 );
               },
             );
