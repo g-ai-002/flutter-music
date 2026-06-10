@@ -12,6 +12,22 @@ import '../widgets/playlist_dialogs.dart';
 class PlayerPage extends StatelessWidget {
   const PlayerPage({super.key});
 
+  static Widget _shadow(Widget child, double radius) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 0),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -101,7 +117,7 @@ class PlayerPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: AspectRatio(
                 aspectRatio: 1,
-                child: CoverImage(song: p.currentSong, size: 320, radius: 12),
+                child: _shadow(CoverImage(song: p.currentSong, size: 320, radius: 12), 12),
               ),
             );
           },
@@ -136,7 +152,7 @@ class PlayerPage extends StatelessWidget {
                               _showErrorIfAny(context, p);
                               return AspectRatio(
                                 aspectRatio: 1,
-                                child: CoverImage(song: p.currentSong, size: 400, radius: 16),
+                                child: _shadow(CoverImage(song: p.currentSong, size: 400, radius: 16), 16),
                               );
                             },
                           ),
@@ -178,7 +194,7 @@ class PlayerPage extends StatelessWidget {
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: CoverImage(song: s, size: 300, radius: 12),
+                    child: _shadow(CoverImage(song: s, size: 300, radius: 12), 12),
                   ),
                 ),
               ),

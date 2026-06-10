@@ -56,6 +56,9 @@ class PlayerProvider extends ChangeNotifier {
   int _prepareGeneration = 0;
   final List<String> _tempFiles = [];
 
+  /// 防止同一个 completed 事件被重复处理
+  String? _lastCompletedSong;
+
   /// 防抖定时器：用户停止切歌 1 秒后才真正加载目标歌曲
   Timer? _debounceTimer;
 
@@ -63,6 +66,9 @@ class PlayerProvider extends ChangeNotifier {
   late final VoidCallback _settingsListener;
 
   Timer? _saveTimer;
+
+  /// 周期性检测歌曲是否播放完毕的轮询定时器
+  Timer? _completionTimer;
 
   final Random _random = Random();
 
@@ -99,6 +105,19 @@ class PlayerProvider extends ChangeNotifier {
       }));
 
     _saveTimer = Timer.periodic(const Duration(seconds: 10), (_) => _saveProgress());
+    // 轮询兜底：每 2 秒检测进度是否到达末尾
+    _completionTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (_duration.value > Duration.zero &&
+          !_preparing &&
+          _debounceTimer?.isActive != true &&
+          _position.value > Duration.zero &&
+          _position.value >= _duration.value - const Duration(seconds: 2)) {
+        final cp = currentSong?.path;
+        if (cp != null && cp != _lastCompletedSong) {
+          _onCompleted();
+        }
+      }
+    });
   }
 
   /// 由外部注入：每次开始播放时回调（用于"最近播放"等横切关注点）
@@ -186,6 +205,7 @@ class PlayerProvider extends ChangeNotifier {
   void _scheduleDebouncedLoad(Song song, {required bool autoPlay}) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(debounceDuration, () {
+      _debounceTimer = null; // 定时器已触发，清空防止误挡 _onCompleted
       _prepare(song, autoPlay: autoPlay);
     });
   }
@@ -195,16 +215,19 @@ class PlayerProvider extends ChangeNotifier {
     if (_preparing) {
       LogService.warning('播放器正在加载中，取消当前加载并开始新的请求');
       _prepareGeneration++;
-      try {
-        await _player.stop();
-      } catch (_) {
-        // stop 可能因播放器状态异常而失败，忽略
-      }
     }
+    // 必须在 stop 之前置位，防止 _onCompleted / 轮询定时器在 stop 期间重入
     _preparing = true;
     _errorMessage = null;
+    _lastCompletedSong = null;
     _prepareGeneration++;
     final gen = _prepareGeneration;
+
+    try {
+      await _player.stop();
+    } catch (_) {
+      // stop 可能因播放器状态异常而失败，忽略
+    }
 
     Timer? watchdog;
     watchdog = Timer(const Duration(seconds: 20), () {
@@ -410,23 +433,28 @@ class PlayerProvider extends ChangeNotifier {
     if (mode == PlayMode.single) {
       _player.seek(Duration.zero);
       _player.play();
-    } else {
-      // 用户正在防抖切歌中，忽略自然完成事件
-      if (_debounceTimer?.isActive == true) return;
-      // 正在加载中（可能由上一次 _onCompleted 触发），静默跳过
-      if (_preparing) return;
-      if (_queue.isEmpty) return;
-      final idx = _resolveNextIndex();
-      _currentIndex = idx;
-      _errorMessage = null;
-      _lyrics = Lyrics.empty;
-      _lastLyricText = '';
-      _currentLyricNotifier.value = '';
-      _position.value = Duration.zero;
-      _duration.value = _queue[idx].duration ?? Duration.zero;
-      notifyListeners();
-      _prepare(_queue[idx], autoPlay: true);
+      return;
     }
+    // 用户正在防抖切歌中，忽略自然完成事件
+    if (_debounceTimer?.isActive == true) return;
+    // 正在加载中（可能由上一次 _onCompleted 触发），静默跳过
+    if (_preparing) return;
+    if (_queue.isEmpty) return;
+    // 防止同一个 completed 事件被重复处理
+    final currentPath = currentSong?.path;
+    if (currentPath != null && currentPath == _lastCompletedSong) return;
+    _lastCompletedSong = currentPath;
+
+    final idx = _resolveNextIndex();
+    _currentIndex = idx;
+    _errorMessage = null;
+    _lyrics = Lyrics.empty;
+    _lastLyricText = '';
+    _currentLyricNotifier.value = '';
+    _position.value = Duration.zero;
+    _duration.value = _queue[idx].duration ?? Duration.zero;
+    notifyListeners();
+    _prepare(_queue[idx], autoPlay: true);
   }
 
   Future<void> setMode(PlayMode mode) async {
@@ -448,6 +476,7 @@ class PlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _completionTimer?.cancel();
     _debounceTimer?.cancel();
     _saveProgress();
     _settings.removeListener(_settingsListener);
