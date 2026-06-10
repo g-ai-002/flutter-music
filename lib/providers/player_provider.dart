@@ -395,11 +395,14 @@ class PlayerProvider extends ChangeNotifier {
       _player.seek(Duration.zero);
       _player.play();
     } else {
-      // 自然播放完成，不需要防抖，直接加载下一首
+      // 用户正在防抖切歌中，忽略自然完成事件，避免多跳一首
+      if (_debounceTimer?.isActive == true) return;
       if (_queue.isEmpty) return;
       final idx = _resolveNextIndex();
       _currentIndex = idx;
       _errorMessage = null;
+      _position.value = Duration.zero;
+      _duration.value = _queue[idx].duration ?? Duration.zero;
       notifyListeners();
       _prepare(_queue[idx], autoPlay: true);
     }
