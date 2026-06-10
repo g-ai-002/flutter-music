@@ -27,6 +27,7 @@ class LyricView extends StatefulWidget {
 class _LyricViewState extends State<LyricView> {
   final ScrollController _ctrl = ScrollController();
   int _lastIndex = -2;
+  Lyrics? _lastLyrics;
 
   @override
   void dispose() {
@@ -62,6 +63,16 @@ class _LyricViewState extends State<LyricView> {
             ),
           );
         }
+        // 切歌时重置滚动位置到第一行
+        if (_lastLyrics != null && _lastLyrics != lyrics) {
+          _lastIndex = -2;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _ctrl.hasClients) {
+              _ctrl.jumpTo(0);
+            }
+          });
+        }
+        _lastLyrics = lyrics;
         final player = context.read<PlayerProvider>();
         return LayoutBuilder(
           builder: (context, constraints) {
