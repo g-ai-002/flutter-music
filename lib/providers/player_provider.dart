@@ -158,6 +158,9 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> playSong(Song song) async {
     _saveProgress();
+    // 必须在 pause 之前启动防抖定时器，防止 pause 等待期间
+    // _onCompleted 触发时因定时器未激活而误跳到下一首
+    _scheduleDebouncedLoad(song, autoPlay: true);
     await _player.pause();
     final idx = _queue.indexWhere((s) => s.path == song.path);
     if (idx < 0) {
@@ -173,7 +176,6 @@ class PlayerProvider extends ChangeNotifier {
     _position.value = Duration.zero;
     _duration.value = song.duration ?? Duration.zero;
     notifyListeners();
-    _scheduleDebouncedLoad(song, autoPlay: true);
   }
 
   /// 防抖调度：用户停止切歌 [debounceDuration] 后才真正加载
@@ -324,27 +326,31 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> next() async {
     if (_queue.isEmpty) return;
     _saveProgress();
-    await _player.pause();
     final idx = _resolveNextIndex();
+    // 必须在 pause 之前启动防抖定时器，防止 pause 等待期间
+    // _onCompleted 触发时因定时器未激活而误跳到下一首
+    _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
+    await _player.pause();
     _currentIndex = idx;
     _errorMessage = null;
     _position.value = Duration.zero;
     _duration.value = _queue[idx].duration ?? Duration.zero;
     notifyListeners();
-    _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
   }
 
   Future<void> previous() async {
     if (_queue.isEmpty) return;
     _saveProgress();
-    await _player.pause();
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
+    // 必须在 pause 之前启动防抖定时器，防止 pause 等待期间
+    // _onCompleted 触发时因定时器未激活而误跳到下一首
+    _scheduleDebouncedLoad(_queue[prev], autoPlay: true);
+    await _player.pause();
     _currentIndex = prev;
     _errorMessage = null;
     _position.value = Duration.zero;
     _duration.value = _queue[prev].duration ?? Duration.zero;
     notifyListeners();
-    _scheduleDebouncedLoad(_queue[prev], autoPlay: true);
   }
 
   int _resolveNextIndex() {
