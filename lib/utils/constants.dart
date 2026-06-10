@@ -7,7 +7,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '音乐播放器';
-  static const String version = '0.3.36';
+  static const String version = '0.3.37';
 
   // SharedPreferences keys (playlists 列表 JSON)
   static const String prefKeyPlaylists = 'playlists_v1';

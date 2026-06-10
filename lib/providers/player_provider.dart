@@ -401,7 +401,7 @@ class PlayerProvider extends ChangeNotifier {
       _player.seek(Duration.zero);
       _player.play();
     } else {
-      // 用户正在防抖切歌中，忽略自然完成事件，避免多跳一首
+      // 用户正在防抖切歌中，忽略自然完成事件
       if (_debounceTimer?.isActive == true) return;
       if (_queue.isEmpty) return;
       final idx = _resolveNextIndex();
@@ -410,7 +410,8 @@ class PlayerProvider extends ChangeNotifier {
       _position.value = Duration.zero;
       _duration.value = _queue[idx].duration ?? Duration.zero;
       notifyListeners();
-      _prepare(_queue[idx], autoPlay: true);
+      // 统一走防抖，避免直接在 _prepare 中播放而与用户切歌产生竞态
+      _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
     }
   }
 
