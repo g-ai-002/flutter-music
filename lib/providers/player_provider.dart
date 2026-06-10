@@ -208,7 +208,7 @@ class PlayerProvider extends ChangeNotifier {
 
     Timer? watchdog;
     watchdog = Timer(const Duration(seconds: 20), () {
-      if (_prepareGeneration == gen) {
+      if (_prepareGeneration == gen && _preparing && !playing) {
         _errorMessage = '加载超时，请重试';
         LogService.error('播放器加载超时: ${song.path}');
         notifyListeners();
@@ -255,6 +255,7 @@ class PlayerProvider extends ChangeNotifier {
       if (_prepareGeneration != gen) return;
       if (autoPlay) await _player.play();
       onSongStart?.call(song);
+      _errorMessage = null;
       notifyListeners();
     } catch (e, st) {
       if (_prepareGeneration != gen) return;
