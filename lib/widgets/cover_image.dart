@@ -150,7 +150,7 @@ class _CoverImageState extends State<CoverImage> {
         borderRadius: BorderRadius.circular(widget.radius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
