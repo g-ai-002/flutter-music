@@ -56,6 +56,9 @@ class PlayerProvider extends ChangeNotifier {
   int _prepareGeneration = 0;
   final List<String> _tempFiles = [];
 
+  /// 防抖定时器：用户停止切歌 2 秒后才真正加载目标歌曲
+  Timer? _debounceTimer;
+
   final List<StreamSubscription> _subs = [];
   late final VoidCallback _settingsListener;
 
@@ -84,6 +87,11 @@ class PlayerProvider extends ChangeNotifier {
         if (s == ProcessingState.completed) _onCompleted();
       }))
       ..add(_player.errorStream.listen((e) {
+        if (!_preparing) {
+          // 非加载阶段的错误（如已取消的旧加载），静默忽略
+          LogService.warning('忽略非加载阶段的播放器错误: ${e.code} - ${e.message}');
+          return;
+        }
         _preparing = false;
         _errorMessage = '播放失败: ${e.message}';
         LogService.error('播放器错误: ${e.code} - ${e.message}');
@@ -159,8 +167,18 @@ class PlayerProvider extends ChangeNotifier {
     // 切歌后随机序列从当前歌开始重建
     _shuffleOrder = const [];
     _shufflePos = -1;
+    _errorMessage = null;
     notifyListeners(); // 先更新 UI，再异步加载
-    await _prepare(song, autoPlay: true);
+    _scheduleDebouncedLoad(song, autoPlay: true);
+  }
+
+  /// 防抖调度：用户停止切歌 [debounceDuration] 后才真正加载
+  /// 在此期间若再次切歌，则取消前一次调度，重新计时
+  void _scheduleDebouncedLoad(Song song, {required bool autoPlay}) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(debounceDuration, () {
+      _prepare(song, autoPlay: autoPlay);
+    });
   }
 
   Future<void> _prepare(Song song, {required bool autoPlay, Duration? seekTo}) async {
@@ -238,6 +256,10 @@ class PlayerProvider extends ChangeNotifier {
       if (_prepareGeneration == gen) {
         watchdog.cancel();
         _preparing = false;
+      } else {
+        // 旧世代的 finally，只清理 watchdog，不修改 _preparing
+        watchdog.cancel();
+        LogService.warning('忽略已废弃加载的结束: ${song.path}');
       }
     }
   }
@@ -299,16 +321,18 @@ class PlayerProvider extends ChangeNotifier {
     if (_queue.isEmpty) return;
     final idx = _resolveNextIndex();
     _currentIndex = idx;
+    _errorMessage = null;
     notifyListeners(); // 先更新 UI，再异步加载
-    await _prepare(_queue[idx], autoPlay: true);
+    _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
   }
 
   Future<void> previous() async {
     if (_queue.isEmpty) return;
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
     _currentIndex = prev;
+    _errorMessage = null;
     notifyListeners(); // 先更新 UI，再异步加载
-    await _prepare(_queue[prev], autoPlay: true);
+    _scheduleDebouncedLoad(_queue[prev], autoPlay: true);
   }
 
   int _resolveNextIndex() {
@@ -359,7 +383,13 @@ class PlayerProvider extends ChangeNotifier {
       _player.seek(Duration.zero);
       _player.play();
     } else {
-      next();
+      // 自然播放完成，不需要防抖，直接加载下一首
+      if (_queue.isEmpty) return;
+      final idx = _resolveNextIndex();
+      _currentIndex = idx;
+      _errorMessage = null;
+      notifyListeners();
+      _prepare(_queue[idx], autoPlay: true);
     }
   }
 
@@ -382,6 +412,7 @@ class PlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _debounceTimer?.cancel();
     _saveProgress();
     _settings.removeListener(_settingsListener);
     for (final s in _subs) {
