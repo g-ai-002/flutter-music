@@ -403,6 +403,8 @@ class PlayerProvider extends ChangeNotifier {
     } else {
       // 用户正在防抖切歌中，忽略自然完成事件
       if (_debounceTimer?.isActive == true) return;
+      // 正在加载中（可能由上一次 _onCompleted 触发），静默跳过
+      if (_preparing) return;
       if (_queue.isEmpty) return;
       final idx = _resolveNextIndex();
       _currentIndex = idx;
@@ -410,8 +412,7 @@ class PlayerProvider extends ChangeNotifier {
       _position.value = Duration.zero;
       _duration.value = _queue[idx].duration ?? Duration.zero;
       notifyListeners();
-      // 统一走防抖，避免直接在 _prepare 中播放而与用户切歌产生竞态
-      _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
+      _prepare(_queue[idx], autoPlay: true);
     }
   }
 
