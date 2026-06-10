@@ -121,6 +121,7 @@ class _LyricViewState extends State<LyricView> {
                   child: ListView.builder(
                     controller: _ctrl,
                     padding: EdgeInsets.only(top: topPad, bottom: topPad),
+                    itemExtent: widget.lineHeight,
                     itemCount: displayLines.length,
                     itemBuilder: (context, i) {
                       final line = displayLines[i];

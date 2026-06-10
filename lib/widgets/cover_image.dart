@@ -145,9 +145,21 @@ class _CoverImageState extends State<CoverImage> {
       child = _placeholder(colors);
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.radius),
-      child: SizedBox(width: widget.size, height: widget.size, child: child),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.radius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(widget.radius),
+        child: SizedBox(width: widget.size, height: widget.size, child: child),
+      ),
     );
   }
 
