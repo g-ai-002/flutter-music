@@ -170,6 +170,8 @@ class PlayerProvider extends ChangeNotifier {
     _shuffleOrder = const [];
     _shufflePos = -1;
     _errorMessage = null;
+    _position.value = Duration.zero;
+    _duration.value = song.duration ?? Duration.zero;
     notifyListeners();
     _scheduleDebouncedLoad(song, autoPlay: true);
   }
@@ -326,6 +328,8 @@ class PlayerProvider extends ChangeNotifier {
     final idx = _resolveNextIndex();
     _currentIndex = idx;
     _errorMessage = null;
+    _position.value = Duration.zero;
+    _duration.value = _queue[idx].duration ?? Duration.zero;
     notifyListeners();
     _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
   }
@@ -337,6 +341,8 @@ class PlayerProvider extends ChangeNotifier {
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
     _currentIndex = prev;
     _errorMessage = null;
+    _position.value = Duration.zero;
+    _duration.value = _queue[prev].duration ?? Duration.zero;
     notifyListeners();
     _scheduleDebouncedLoad(_queue[prev], autoPlay: true);
   }
