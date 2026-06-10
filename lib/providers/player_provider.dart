@@ -157,6 +157,8 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> playSong(Song song) async {
+    _saveProgress();
+    await _player.pause();
     final idx = _queue.indexWhere((s) => s.path == song.path);
     if (idx < 0) {
       _queue = [..._queue, song];
@@ -168,7 +170,7 @@ class PlayerProvider extends ChangeNotifier {
     _shuffleOrder = const [];
     _shufflePos = -1;
     _errorMessage = null;
-    notifyListeners(); // 先更新 UI，再异步加载
+    notifyListeners();
     _scheduleDebouncedLoad(song, autoPlay: true);
   }
 
@@ -319,19 +321,23 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> next() async {
     if (_queue.isEmpty) return;
+    _saveProgress();
+    await _player.pause();
     final idx = _resolveNextIndex();
     _currentIndex = idx;
     _errorMessage = null;
-    notifyListeners(); // 先更新 UI，再异步加载
+    notifyListeners();
     _scheduleDebouncedLoad(_queue[idx], autoPlay: true);
   }
 
   Future<void> previous() async {
     if (_queue.isEmpty) return;
+    _saveProgress();
+    await _player.pause();
     final prev = _currentIndex <= 0 ? _queue.length - 1 : _currentIndex - 1;
     _currentIndex = prev;
     _errorMessage = null;
-    notifyListeners(); // 先更新 UI，再异步加载
+    notifyListeners();
     _scheduleDebouncedLoad(_queue[prev], autoPlay: true);
   }
 
