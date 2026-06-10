@@ -432,21 +432,36 @@ class _ControlPanel extends StatelessWidget {
   }
 }
 
-class _ProgressSlider extends StatelessWidget {
+class _ProgressSlider extends StatefulWidget {
   final PlayerProvider player;
   const _ProgressSlider({required this.player});
+
+  @override
+  State<_ProgressSlider> createState() => _ProgressSliderState();
+}
+
+class _ProgressSliderState extends State<_ProgressSlider> {
+  bool _dragging = false;
+  double _dragValue = 0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return PlayerPositionBuilder(
-      player: player,
+      player: widget.player,
       builder: (context, pos, dur) {
         final max = dur.inMilliseconds == 0 ? 1.0 : dur.inMilliseconds.toDouble();
-        final value = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
+        final value = _dragging
+            ? _dragValue
+            : pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
         return Row(
           children: [
-            Text(formatDuration(pos), style: theme.textTheme.bodySmall),
+            Text(
+              formatDuration(_dragging
+                  ? Duration(milliseconds: _dragValue.toInt())
+                  : pos),
+              style: theme.textTheme.bodySmall,
+            ),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
@@ -458,7 +473,19 @@ class _ProgressSlider extends StatelessWidget {
                   min: 0,
                   max: max,
                   value: value,
-                  onChanged: (v) => player.seek(Duration(milliseconds: v.toInt())),
+                  onChangeStart: (_) {
+                    _dragging = true;
+                    _dragValue = pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble();
+                  },
+                  onChanged: (v) {
+                    _dragValue = v;
+                    setState(() {});
+                  },
+                  onChangeEnd: (v) {
+                    _dragging = false;
+                    setState(() {});
+                    widget.player.seek(Duration(milliseconds: v.toInt()));
+                  },
                 ),
               ),
             ),
