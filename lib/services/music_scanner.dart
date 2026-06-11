@@ -94,14 +94,19 @@ class MusicScanner {
       if (hasNonAscii(path)) {
         tempPath = await ensureAsciiPath(path);
         metaFile = File(tempPath);
+        LogService.info('中文路径临时文件: ${p.basename(path)} -> $tempPath');
       }
       final meta = readMetadata(metaFile, getImage: false);
       if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
       if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
       if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
       duration = meta.duration;
+      if (duration == null) {
+        LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
+      }
     } catch (e) {
-      LogService.warning('读取元数据失败 (${p.basename(path)}): $e');
+      final ext = p.extension(path);
+      LogService.warning('元数据解析失败 (${p.basename(path)}): 类型=${e.runtimeType}, 扩展名=$ext, 错误=$e');
     } finally {
       // 及时清理临时文件
       if (tempPath != null) {
