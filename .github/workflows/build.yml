@@ -8,6 +8,12 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# 同一个 commit 只运行一个工作流实例
+# 当 tag 和 main 同时触发时，优先保留 tag 触发的（会取消 main 触发的）
+concurrency:
+  group: build-${{ github.sha }}
+  cancel-in-progress: true
+
 env:
   JAVA_VERSION: '21'
   FLUTTER_VERSION: '3.44.1'
