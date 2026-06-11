@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
 import '../models/song.dart';
 import '../utils/constants.dart';
@@ -12,6 +13,14 @@ class ScanProgress {
   final int found;
   final String currentDir;
   const ScanProgress({required this.scanned, required this.found, required this.currentDir});
+}
+
+/// 时长补全进度（后台任务回调用）
+class DurationFillProgress {
+  final int filled;
+  final int total;
+  final Song updatedSong;
+  const DurationFillProgress({required this.filled, required this.total, required this.updatedSong});
 }
 
 /// 音乐扫描器：递归遍历指定目录，提取元数据，匹配同目录封面 / 同名歌词
@@ -69,8 +78,44 @@ class MusicScanner {
       }
     }
 
-    LogService.info('扫描完成: 共 ${results.length} 首歌曲, 累计遍历 $scanned 个文件');
+    LogService.info('扫描完成: 共 ${results.length} 歌曲, 累计遍历 $scanned 个文件');
     return results;
+  }
+
+  /// 后台补全缺失的时长
+  ///
+  /// 扫描完成后，对 duration 为 null 的歌曲用 just_audio 异步获取时长
+  /// 每获取到一个时长就通过 [onProgress] 回调通知 UI 更新
+  Future<void> fillMissingDurations(
+    List<Song> songs,
+    void Function(DurationFillProgress) onProgress,
+  ) async {
+    final missingSongs = songs.where((s) => s.duration == null).toList();
+    if (missingSongs.isEmpty) {
+      LogService.info('所有歌曲已有时长，无需补全');
+      return;
+    }
+
+    LogService.info('开始后台补全时长: 共 ${missingSongs.length} 首需要补全');
+    int filled = 0;
+
+    for (final song in missingSongs) {
+      final duration = await _getDurationFromAudio(song.path);
+      filled++;
+      if (duration != null) {
+        final updatedSong = song.copyWith(duration: duration);
+        LogService.info('补全时长 (${song.fileName}): ${duration.inSeconds}s');
+        onProgress(DurationFillProgress(
+          filled: filled,
+          total: missingSongs.length,
+          updatedSong: updatedSong,
+        ));
+      } else {
+        LogService.warning('补全时长失败 (${song.fileName})');
+      }
+    }
+
+    LogService.info('时长补全完成: $filled/${missingSongs.length}');
   }
 
   Future<Song> _buildSong(File file, Map<String, String?> coverCache) async {
@@ -88,6 +133,7 @@ class MusicScanner {
 
     // 元数据读取（失败时降级使用文件名）
     // Windows 中文路径处理：先尝试直接读取，失败再用临时文件
+    // 注意：时长获取失败时不阻塞扫描，后续由 fillMissingDurations 后台补全
     String? tempPath;
     try {
       // Windows 中文路径：先尝试直接读取（audio_metadata_reader 是纯 Dart）
@@ -98,10 +144,6 @@ class MusicScanner {
           if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
           if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
           duration = meta.duration;
-          LogService.info('直接读取成功 (${p.basename(path)}): 时长=${duration?.inSeconds}s');
-          if (duration == null) {
-            LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
-          }
         } catch (directError) {
           LogService.info('直接读取失败，尝试临时文件 (${p.basename(path)}): $directError');
           tempPath = await ensureAsciiPath(path);
@@ -110,10 +152,6 @@ class MusicScanner {
           if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
           if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
           duration = meta.duration;
-          LogService.info('临时文件读取成功 (${p.basename(path)}): 时长=${duration?.inSeconds}s');
-          if (duration == null) {
-            LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
-          }
         }
       } else {
         // 非 Windows 或纯 ASCII 路径，直接读取
@@ -122,9 +160,6 @@ class MusicScanner {
         if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
         if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
         duration = meta.duration;
-        if (duration == null) {
-          LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
-        }
       }
     } catch (e) {
       final ext = p.extension(path);
@@ -192,5 +227,40 @@ class MusicScanner {
     }
     cache[dir] = found;
     return found;
+  }
+
+  /// 降级获取时长：用 just_audio 加载音频文件获取时长
+  /// 用于元数据解析失败（如无 ID3 标签的 MP3）的情况
+  Future<Duration?> _getDurationFromAudio(String path) async {
+    final player = AudioPlayer();
+    String? tempPath;
+    try {
+      String loadPath = path;
+      // Windows 中文路径处理
+      if (needsAsciiPathWorkaround() && hasNonAscii(path)) {
+        tempPath = await ensureAsciiPath(path);
+        loadPath = tempPath;
+      }
+
+      // 设置音频源，等待时长信息
+      await player.setFilePath(loadPath, preload: true);
+
+      // 等待时长就绪（最多 5 秒）
+      final duration = await player.durationStream
+          .first
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+
+      return duration;
+    } catch (e) {
+      LogService.warning('just_audio 获取时长失败 (${p.basename(path)}): $e');
+      return null;
+    } finally {
+      await player.dispose();
+      if (tempPath != null) {
+        try {
+          await File(tempPath).delete();
+        } catch (_) {}
+      }
+    }
   }
 }
