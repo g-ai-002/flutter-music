@@ -87,22 +87,44 @@ class MusicScanner {
     } catch (_) {}
 
     // 元数据读取（失败时降级使用文件名）
-    // 对于中文路径，先复制到临时文件再读取
+    // Windows 中文路径处理：先尝试直接读取，失败再用临时文件
     String? tempPath;
-    File metaFile = file;
     try {
-      if (hasNonAscii(path)) {
-        tempPath = await ensureAsciiPath(path);
-        metaFile = File(tempPath);
-        LogService.info('中文路径临时文件: ${p.basename(path)} -> $tempPath');
-      }
-      final meta = readMetadata(metaFile, getImage: false);
-      if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
-      if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
-      if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
-      duration = meta.duration;
-      if (duration == null) {
-        LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
+      // Windows 中文路径：先尝试直接读取（audio_metadata_reader 是纯 Dart）
+      if (needsAsciiPathWorkaround() && hasNonAscii(path)) {
+        try {
+          final meta = readMetadata(file, getImage: false);
+          if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
+          if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
+          if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
+          duration = meta.duration;
+          LogService.info('直接读取成功 (${p.basename(path)}): 时长=${duration?.inSeconds}s');
+          if (duration == null) {
+            LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
+          }
+        } catch (directError) {
+          LogService.info('直接读取失败，尝试临时文件 (${p.basename(path)}): $directError');
+          tempPath = await ensureAsciiPath(path);
+          final meta = readMetadata(File(tempPath), getImage: false);
+          if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
+          if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
+          if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
+          duration = meta.duration;
+          LogService.info('临时文件读取成功 (${p.basename(path)}): 时长=${duration?.inSeconds}s');
+          if (duration == null) {
+            LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
+          }
+        }
+      } else {
+        // 非 Windows 或纯 ASCII 路径，直接读取
+        final meta = readMetadata(file, getImage: false);
+        if (meta.title?.trim().isNotEmpty == true) title = meta.title!.trim();
+        if (meta.artist?.trim().isNotEmpty == true) artist = meta.artist!.trim();
+        if (meta.album?.trim().isNotEmpty == true) album = meta.album!.trim();
+        duration = meta.duration;
+        if (duration == null) {
+          LogService.warning('元数据无时长 (${p.basename(path)}): 格式=${p.extension(path)}');
+        }
       }
     } catch (e) {
       final ext = p.extension(path);
