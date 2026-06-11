@@ -18,12 +18,16 @@ class LibraryProvider extends ChangeNotifier {
   late List<Song> _songs;
   late List<Song> _filtered;
   bool _scanning = false;
+  bool _fillingDurations = false;
   ScanProgress? _progress;
+  DurationFillProgress? _fillProgress;
   String _searchKeyword = '';
 
   List<Song> get songs => _songs;
   bool get scanning => _scanning;
+  bool get fillingDurations => _fillingDurations;
   ScanProgress? get progress => _progress;
+  DurationFillProgress? get fillProgress => _fillProgress;
   String get searchKeyword => _searchKeyword;
   List<Song> get filtered => _filtered;
 
@@ -80,6 +84,9 @@ class LibraryProvider extends ChangeNotifier {
       _recomputeFiltered();
       await _storage.saveCachedSongs(_songs);
       LogService.info('扫描完成: ${_songs.length} 首');
+
+      // 后台异步补全缺失的时长
+      _startFillMissingDurations();
     } catch (e, st) {
       LogService.error('扫描失败', e, st);
     } finally {
@@ -87,5 +94,34 @@ class LibraryProvider extends ChangeNotifier {
       _progress = null;
       notifyListeners();
     }
+  }
+
+  /// 启动后台补全时长任务
+  void _startFillMissingDurations() {
+    if (_fillingDurations) return;
+    _fillingDurations = true;
+    _fillProgress = null;
+    notifyListeners();
+
+    MusicScanner.instance.fillMissingDurations(_songs, (progress) {
+      // 更新列表中的歌曲时长
+      final idx = _songs.indexWhere((s) => s.path == progress.updatedSong.path);
+      if (idx >= 0) {
+        _songs[idx] = progress.updatedSong;
+        _recomputeFiltered();
+      }
+      _fillProgress = progress;
+      notifyListeners();
+    }).then((_) {
+      // 补全完成后保存缓存
+      _storage.saveCachedSongs(_songs);
+      LogService.info('时长补全完成，已保存缓存');
+    }).catchError((e) {
+      LogService.error('时长补全失败', e);
+    }).whenComplete(() {
+      _fillingDurations = false;
+      _fillProgress = null;
+      notifyListeners();
+    });
   }
 }
