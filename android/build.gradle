@@ -1,7 +1,14 @@
 allprojects {
     repositories {
         if (System.getenv('USE_ALIYUN_MAVEN') == 'true') {
+            maven { url 'https://maven.aliyun.com/repository/google' }
             maven { url 'https://maven.aliyun.com/repository/public' }
+
+            maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-google/' }
+            maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-central/' }
+
+            maven { url 'https://repo.huaweicloud.com/repository/maven/google/' }
+            maven { url 'https://repo.huaweicloud.com/repository/maven/central/' }
         }
         google()
         mavenCentral()
