@@ -75,6 +75,14 @@ jobs:
 
       - name: Diagnose network and Flutter environment
         run: |
+          echo "=== Build-time env ==="
+          echo "USE_ALIYUN_MAVEN=${USE_ALIYUN_MAVEN:-<not set>}"
+          echo "JAVA_HOME=${JAVA_HOME:-<not set>}"
+          echo "ANDROID_HOME=${ANDROID_HOME:-<not set>}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<not set>}"
+          echo "GRADLE_USER_HOME=${GRADLE_USER_HOME:-<not set>}"
+          echo "http_proxy=${http_proxy:-<not set>}"
+          echo "https_proxy=${https_proxy:-<not set>}"
           echo "=== Flutter version ==="
           flutter --version
           echo "=== Flutter doctor ==="
@@ -85,9 +93,6 @@ jobs:
           echo "=== Connectivity check ==="
           curl -sI --connect-timeout 10 https://storage.flutter-io.cn 2>&1 || echo "storage.flutter-io.cn unreachable"
           curl -sI --connect-timeout 10 https://storage.googleapis.com 2>&1 || echo "storage.googleapis.com unreachable"
-
-      - name: Precache Flutter artifacts
-        run: flutter precache --verbose
 
       - name: Build Android APK
         run: flutter build apk --release --target-platform android-arm64 --verbose
