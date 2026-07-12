@@ -9,7 +9,8 @@ if (useAliyun) {
     def aliGoogle = 'https://maven.aliyun.com/repository/google'
     def aliPlugin = 'https://maven.aliyun.com/repository/gradle-plugin'
 
-    // 为所有 Settings（含 included builds）配置 pluginManagement 仓库
+    // 为所有 Settings（含 included builds）配置 pluginManagement 和 dependencyResolutionManagement
+    // AGP 9.x 默认 PREFER_SETTINGS 模式，禁止 project 级别 repositories，必须在 settings 级别配置
     beforeSettings { settings ->
         settings.pluginManagement {
             repositories {
@@ -22,10 +23,18 @@ if (useAliyun) {
                 gradlePluginPortal()
             }
         }
+        settings.dependencyResolutionManagement {
+            repositories {
+                clear()
+                maven { url aliPublic }
+                maven { url aliGoogle }
+                mavenCentral()
+                google()
+            }
+        }
     }
 
-    // 替换所有项目的 repositories 和 buildscript.repositories
-    // allprojects 在 init script 中对所有构建（含 included builds）的每个 project 生效
+    // buildscript.repositories 不受 PREFER_SETTINGS 限制，仍可在 project 级别配置
     allprojects {
         buildscript {
             repositories {
@@ -36,13 +45,6 @@ if (useAliyun) {
                 mavenCentral()
                 google()
             }
-        }
-        repositories {
-            clear()
-            maven { url aliPublic }
-            maven { url aliGoogle }
-            mavenCentral()
-            google()
         }
     }
 }
