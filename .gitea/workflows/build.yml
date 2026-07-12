@@ -65,6 +65,7 @@ jobs:
     name: Build Android APK
     permissions:
       contents: read
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: http://192.168.31.120:3020/actions/checkout@v6
@@ -72,8 +73,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Diagnose network and Flutter environment
+        run: |
+          echo "=== Flutter version ==="
+          flutter --version
+          echo "=== Flutter doctor ==="
+          flutter doctor -v
+          echo "=== Environment variables ==="
+          echo "FLUTTER_STORAGE_BASE_URL=${FLUTTER_STORAGE_BASE_URL:-<not set>}"
+          echo "PUB_HOSTED_URL=${PUB_HOSTED_URL:-<not set>}"
+          echo "=== Connectivity check ==="
+          curl -sI --connect-timeout 10 https://storage.flutter-io.cn 2>&1 || echo "storage.flutter-io.cn unreachable"
+          curl -sI --connect-timeout 10 https://storage.googleapis.com 2>&1 || echo "storage.googleapis.com unreachable"
+
+      - name: Precache Flutter artifacts
+        run: flutter precache --verbose
+
       - name: Build Android APK
-        run: flutter build apk --release --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64 --verbose
 
       - name: Rename Android APK
         run: |
