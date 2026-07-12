@@ -1,0 +1,154 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.sha }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    name: Prepare package metadata
+    outputs:
+      app_version: ${{ steps.version.outputs.jversion }}
+      project_name: ${{ steps.project.outputs.project_name }}
+    steps:
+      - name: Prepare package version
+        id: version
+        shell: bash
+        run: |
+          jversion="0.1.0"
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            raw_tag="${{ github.ref_name }}"
+            version=$(echo "$raw_tag" | sed -E 's/^[vV]//')
+            jversion=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')
+            if [ -z "$jversion" ]; then
+              jversion="0.1.0"
+            fi
+          fi
+          echo "jversion=$jversion" >> $GITHUB_OUTPUT
+          echo "Using version: $jversion"
+
+      - name: Compute project name
+        id: project
+        shell: bash
+        run: |
+          projectName=$(echo "${{ env.APP_NAME }}" | tr '-' '_')
+          echo "project_name=$projectName" >> $GITHUB_OUTPUT
+          echo "Project name for Flutter: $projectName"
+
+  test:
+    needs: [ metadata ]
+    runs-on: flutter-ubuntu
+    name: Run Dart tests
+    steps:
+      - name: Checkout code
+        uses: http://192.168.31.120:3020/actions/checkout@v6
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+  build-android:
+    needs: [ metadata, test ]
+    runs-on: flutter-ubuntu
+    name: Build Android APK
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: http://192.168.31.120:3020/actions/checkout@v6
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Rename Android APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+
+      - name: Upload Android artifact
+        uses: http://192.168.31.120:3020/actions/gitea-upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+
+  release:
+    needs: [ metadata, build-android ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release
+
+    steps:
+      - name: Checkout code (for changelog)
+        uses: http://192.168.31.120:3020/actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Android artifact
+        uses: http://192.168.31.120:3020/actions/gitea-download-artifact@v8
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          path: artifacts
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          current_tag=${GITHUB_REF#refs/tags/}
+          prev_tag=$(git tag --sort=-version:refname | grep -v "^$current_tag$" | head -1)
+          if [[ -n "$prev_tag" ]]; then
+            git log --pretty=format:"* %s (%h)" "$prev_tag".."$current_tag" -- . ":(exclude)docs" ":(exclude).github" ":(exclude).gitea" > /tmp/release_body.txt
+          else
+            echo "Initial release." > /tmp/release_body.txt
+          fi
+
+      - name: Create Gitea Release
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          PRERELEASE=false
+          if echo "${{ github.ref_name }}" | grep -qE -- '-(rc|beta)'; then
+            PRERELEASE=true
+          fi
+
+          BODY_JSON=$(jq -Rs . < /tmp/release_body.txt)
+          response=$(curl -s -X POST \
+            "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases" \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"${{ github.ref_name }}\",\"name\":\"${{ github.ref_name }}\",\"body\":${BODY_JSON},\"draft\":false,\"prerelease\":${PRERELEASE}}")
+
+          release_id=$(echo "$response" | jq .id)
+
+          if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
+            echo "Failed to create release: $response"
+            exit 1
+          fi
+
+          echo "Created release with ID: $release_id"
+
+          for file in artifacts/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading $filename..."
+              curl -s -X POST \
+                "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/$release_id/assets?name=$filename" \
+                -H "Authorization: token $GITEA_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary "@$file"
+            fi
+          done
