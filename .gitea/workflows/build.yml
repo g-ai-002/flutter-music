@@ -94,6 +94,17 @@ jobs:
           curl -sI --connect-timeout 10 https://storage.flutter-io.cn 2>&1 || echo "storage.flutter-io.cn unreachable"
           curl -sI --connect-timeout 10 https://storage.googleapis.com 2>&1 || echo "storage.googleapis.com unreachable"
 
+      - name: Deploy Gradle init script for Aliyun mirrors
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cp android/gradle/init-aliyun-mirror.gradle ~/.gradle/init.d/init-aliyun-mirror.gradle
+          echo "Deployed init script to ~/.gradle/init.d/"
+          if [ "${USE_ALIYUN_MAVEN:-}" = "true" ]; then
+            echo "USE_ALIYUN_MAVEN=true, Aliyun mirrors will be applied globally"
+          else
+            echo "USE_ALIYUN_MAVEN not set, init script will be a no-op"
+          fi
+
       - name: Build Android APK
         run: flutter build apk --release --target-platform android-arm64 --verbose
 

@@ -1,0 +1,48 @@
+//当 USE_ALIYUN_MAVEN=true 时，全局替换所有仓库为阿里云镜像。
+//init script 对所有 Gradle 构建生效，包括 Flutter SDK 的 includeBuild 复合构建。
+//未设置时不做任何操作，走 Gradle/Flutter 默认源。
+
+def useAliyun = System.getenv('USE_ALIYUN_MAVEN') == 'true'
+
+if (useAliyun) {
+    def aliPublic = 'https://maven.aliyun.com/repository/public'
+    def aliGoogle = 'https://maven.aliyun.com/repository/google'
+    def aliPlugin = 'https://maven.aliyun.com/repository/gradle-plugin'
+
+    // 为所有 Settings（含 included builds）配置 pluginManagement 仓库
+    beforeSettings { settings ->
+        settings.pluginManagement {
+            repositories {
+                clear()
+                maven { url aliPublic }
+                maven { url aliGoogle }
+                maven { url aliPlugin }
+                mavenCentral()
+                google()
+                gradlePluginPortal()
+            }
+        }
+    }
+
+    // 替换所有项目的 repositories 和 buildscript.repositories
+    // allprojects 在 init script 中对所有构建（含 included builds）的每个 project 生效
+    allprojects {
+        buildscript {
+            repositories {
+                clear()
+                maven { url aliPublic }
+                maven { url aliGoogle }
+                maven { url aliPlugin }
+                mavenCentral()
+                google()
+            }
+        }
+        repositories {
+            clear()
+            maven { url aliPublic }
+            maven { url aliGoogle }
+            mavenCentral()
+            google()
+        }
+    }
+}

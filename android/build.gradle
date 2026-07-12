@@ -1,14 +1,8 @@
 allprojects {
     repositories {
         if (System.getenv('USE_ALIYUN_MAVEN') == 'true') {
-            // 1. Maven Central 镜像 (Kotlin artifact 主源，避免 fallback 到 dl.google.com 触发 429)
             maven { url 'https://maven.aliyun.com/repository/public' }
-            maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-central/' }
-            maven { url 'https://repo.huaweicloud.com/repository/maven/central/' }
-            // 2. Google Maven 镜像 (AndroidX 等)
             maven { url 'https://maven.aliyun.com/repository/google' }
-            maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-google/' }
-            maven { url 'https://repo.huaweicloud.com/repository/maven/google/' }
         }
         mavenCentral()
         google()
