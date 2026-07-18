@@ -118,6 +118,68 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
           path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
 
+  build-windows:
+    needs: [ metadata, test ]
+    runs-on: flutter-windows
+    name: Build Windows EXE
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: http://192.168.31.120:3020/actions/checkout@v6
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Diagnose Flutter environment
+        shell: pwsh
+        run: |
+          Write-Host "=== Flutter version ==="
+          flutter --version
+          Write-Host "=== Flutter doctor ==="
+          flutter doctor -v
+
+      - name: Generate Windows platform files
+        run: flutter create --platforms=windows --project-name test .
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: List build output
+        shell: pwsh
+        run: |
+          $releaseDir = 'build\windows\x64\runner\Release'
+          if (Test-Path $releaseDir) {
+            Get-ChildItem $releaseDir | ForEach-Object {
+              $sizeMB = [math]::Round($_.Length / 1MB, 2)
+              Write-Host "  $($_.Name)  ($sizeMB MB)"
+            }
+            $totalMB = [math]::Round((Get-ChildItem $releaseDir | Measure-Object Length -Sum).Sum / 1MB, 2)
+            Write-Host "  Total: $totalMB MB"
+          } else {
+            Write-Host "Release dir missing"
+            exit 1
+          }
+
+      - name: Create Windows ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath windows.zip
+          $zipSizeMB = [math]::Round((Get-Item windows.zip).Length / 1MB, 2)
+          Write-Host "ZIP size: $zipSizeMB MB"
+
+      - name: Rename Windows ZIP
+        shell: pwsh
+        run: |
+          Move-Item -Path windows.zip -Destination ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip -Force
+
+      - name: Upload Windows artifact
+        uses: http://192.168.31.120:3020/actions/gitea-upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+
   release:
     needs: [ metadata, build-android ]
     if: startsWith(github.ref, 'refs/tags/v')
