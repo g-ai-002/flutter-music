@@ -129,17 +129,18 @@ jobs:
       - name: Checkout code
         uses: http://192.168.31.120:3020/actions/checkout@v6
 
-      - name: Install dependencies
-        shell: bash
-        run: flutter pub get
-
       - name: Diagnose Flutter environment
         shell: bash
         run: |
+          id
           echo "=== Flutter version ==="
           flutter --version
           echo "=== Flutter doctor ==="
           flutter doctor -v
+
+      - name: Install dependencies
+        shell: bash
+        run: flutter pub get
 
       - name: Generate Windows platform files
         shell: bash
