@@ -44,7 +44,7 @@ jobs:
 
   test:
     needs: [ metadata ]
-    runs-on: flutter-ubuntu
+    runs-on: ubuntu-flutter
     name: Run Dart tests
     steps:
       - name: Checkout code
@@ -61,7 +61,7 @@ jobs:
 
   build-android:
     needs: [ metadata, test ]
-    runs-on: flutter-ubuntu
+    runs-on: ubuntu-flutter
     name: Build Android APK
     permissions:
       contents: read
@@ -120,7 +120,7 @@ jobs:
 
   build-windows:
     needs: [ metadata, test ]
-    runs-on: flutter-windows
+    runs-on: windows-flutter
     name: Build Windows EXE
     permissions:
       contents: read
