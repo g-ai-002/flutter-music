@@ -157,34 +157,42 @@ jobs:
           $symlinksDir = "windows\flutter\ephemeral\.plugin_symlinks"
           New-Item -ItemType Directory -Force -Path $symlinksDir | Out-Null
 
-          if (Test-Path ".flutter-plugins") {
-            Get-Content ".flutter-plugins" | ForEach-Object {
-              if ($_ -match '^\s*#' -or $_ -match '^\s*$') { return }
-              $parts = $_ -split '=', 2
-              $name = $parts[0].Trim()
-              $target = $parts[1].Trim().TrimEnd('\', '/')
+          $configFile = ".dart_tool\package_config.json"
+          if (-not (Test-Path $configFile)) {
+            Write-Host "WARNING: $configFile not found"
+            exit 1
+          }
 
-              $linkPath = Join-Path $symlinksDir $name
-              if (Test-Path $linkPath) {
-                Write-Host "  $name : already exists, skip"
-                return
-              }
+          $config = Get-Content $configFile -Raw | ConvertFrom-Json
+          foreach ($pkg in $config.packages) {
+            # Skip project itself (relative rootUri) and non-file URIs
+            if ($pkg.rootUri -notmatch '^file:///') { continue }
 
-              try {
-                New-Item -ItemType SymbolicLink -Path $linkPath -Target $target -ErrorAction Stop | Out-Null
-                Write-Host "  $name : symlink OK"
-              } catch {
-                Write-Host "  $name : symlink failed ($($_.Exception.Message)), trying junction..."
-                cmd /c mklink /J "$linkPath" "$target"
-                if ($LASTEXITCODE -eq 0) {
-                  Write-Host "  $name : junction OK"
-                } else {
-                  Write-Host "  $name : FAILED"
-                }
+            $name = $pkg.name
+            $rootPath = ($pkg.rootUri -replace '^file:///', '' -replace '/', '\').TrimEnd('\')
+
+            # Only create symlinks for packages with a windows/ directory (Windows plugins)
+            $windowsDir = Join-Path $rootPath "windows"
+            if (-not (Test-Path $windowsDir -PathType Container)) { continue }
+
+            $linkPath = Join-Path $symlinksDir $name
+            if (Test-Path $linkPath) {
+              Write-Host "  $name : already exists, skip"
+              continue
+            }
+
+            try {
+              New-Item -ItemType SymbolicLink -Path $linkPath -Target $rootPath -ErrorAction Stop | Out-Null
+              Write-Host "  $name : symlink OK"
+            } catch {
+              Write-Host "  $name : symlink failed, trying junction..."
+              cmd /c mklink /J "$linkPath" "$rootPath"
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "  $name : junction OK"
+              } else {
+                Write-Host "  $name : FAILED"
               }
             }
-          } else {
-            Write-Host "WARNING: .flutter-plugins not found"
           }
 
           Write-Host "`n=== Plugin symlinks ==="
