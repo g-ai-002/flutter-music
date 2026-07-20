@@ -139,53 +139,56 @@ jobs:
           echo "=== Flutter doctor ==="
           flutter doctor -v
 
-      - name: Diagnose symlink permissions
-        shell: bash
-        run: |
-          echo "=== Current user ==="
-          whoami
-          echo "=== Admin / Elevated check ==="
-          net session >/dev/null 2>&1 && echo "Running as ADMIN" || echo "NOT admin"
-          echo "=== Developer Mode (registry) ==="
-          reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /v AllowDevelopmentWithoutDevLicense 2>/dev/null \
-            || echo "Developer Mode key not found (likely OFF)"
-          echo "=== Privileges (SeCreateSymbolicLinkPrivilege) ==="
-          whoami //priv 2>/dev/null | grep -i "SeCreateSymbolicLink" \
-            || echo "SeCreateSymbolicLinkPrivilege NOT found in current token"
-          echo "=== Test: create a symlink ==="
-          tmpdir=$(mktemp -d)
-          touch "$tmpdir/target.txt"
-          if ln -s "$tmpdir/target.txt" "$tmpdir/link.txt" 2>/dev/null; then
-            echo "Symlink creation via ln -s: OK"
-          else
-            echo "Symlink creation via ln -s: FAILED"
-          fi
-          if cmd //c "mklink \"${tmpdir}\\cmd_link\" \"${tmpdir}\\target.txt\"" 2>/dev/null; then
-            echo "Symlink creation via mklink: OK"
-          else
-            echo "Symlink creation via mklink: FAILED"
-          fi
-          rm -rf "$tmpdir"
-
-      - name: Enable Windows Developer Mode (symlink support)
-        shell: bash
-        env:
-          MSYS_NO_PATHCONV: "1"
+      - name: Enable Windows Developer Mode
+        shell: pwsh
         run: |
           reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v AllowDevelopmentWithoutDevLicense /d 1
-          echo "--- Verifying symlink capability ---"
-          tmpdir=$(mktemp -d)
-          touch "$tmpdir/target.txt"
-          if cmd //c "mklink \"${tmpdir}\\link.txt\" \"${tmpdir}\\target.txt\"" 2>/dev/null; then
-            echo "Symlink creation: OK"
-          else
-            echo "Symlink creation: STILL FAILED - Developer Mode may require container restart"
-          fi
-          rm -rf "$tmpdir"
+          Write-Host "Developer Mode enabled."
 
       - name: Install dependencies
-        shell: bash
-        run: flutter pub get
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          flutter pub get 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "`n=== flutter pub get failed (exit $LASTEXITCODE), creating plugin symlinks manually ==="
+          }
+
+          $symlinksDir = "windows\flutter\ephemeral\.plugin_symlinks"
+          New-Item -ItemType Directory -Force -Path $symlinksDir | Out-Null
+
+          if (Test-Path ".flutter-plugins") {
+            Get-Content ".flutter-plugins" | ForEach-Object {
+              if ($_ -match '^\s*#' -or $_ -match '^\s*$') { return }
+              $parts = $_ -split '=', 2
+              $name = $parts[0].Trim()
+              $target = $parts[1].Trim().TrimEnd('\', '/')
+
+              $linkPath = Join-Path $symlinksDir $name
+              if (Test-Path $linkPath) {
+                Write-Host "  $name : already exists, skip"
+                return
+              }
+
+              try {
+                New-Item -ItemType SymbolicLink -Path $linkPath -Target $target -ErrorAction Stop | Out-Null
+                Write-Host "  $name : symlink OK"
+              } catch {
+                Write-Host "  $name : symlink failed ($($_.Exception.Message)), trying junction..."
+                cmd /c mklink /J "$linkPath" "$target"
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "  $name : junction OK"
+                } else {
+                  Write-Host "  $name : FAILED"
+                }
+              }
+            }
+          } else {
+            Write-Host "WARNING: .flutter-plugins not found"
+          }
+
+          Write-Host "`n=== Plugin symlinks ==="
+          Get-ChildItem $symlinksDir -ErrorAction SilentlyContinue | Format-Table Name, LinkType, Target
 
       - name: Generate Windows platform files
         shell: bash
