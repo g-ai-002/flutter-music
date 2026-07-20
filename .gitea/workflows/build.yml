@@ -155,7 +155,19 @@ jobs:
           }
 
           $symlinksDir = "windows\flutter\ephemeral\.plugin_symlinks"
+
+          # Clean slate: remove any partial state left by flutter pub get
+          Remove-Item -Recurse -Force $symlinksDir -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $symlinksDir | Out-Null
+
+          # Verify write access
+          try {
+            "test" | Set-Content "$symlinksDir\__test.txt"
+            Remove-Item "$symlinksDir\__test.txt"
+          } catch {
+            Write-Host "FATAL: Cannot write to $symlinksDir : $_"
+            exit 1
+          }
 
           $configFile = ".dart_tool\package_config.json"
           if (-not (Test-Path $configFile)) {
@@ -165,32 +177,38 @@ jobs:
 
           $config = Get-Content $configFile -Raw | ConvertFrom-Json
           foreach ($pkg in $config.packages) {
-            # Skip project itself (relative rootUri) and non-file URIs
             if ($pkg.rootUri -notmatch '^file:///') { continue }
 
             $name = $pkg.name
             $rootPath = ($pkg.rootUri -replace '^file:///', '' -replace '/', '\').TrimEnd('\')
 
-            # Only create symlinks for packages with a windows/ directory (Windows plugins)
             $windowsDir = Join-Path $rootPath "windows"
             if (-not (Test-Path $windowsDir -PathType Container)) { continue }
 
             $linkPath = Join-Path $symlinksDir $name
-            if (Test-Path $linkPath) {
-              Write-Host "  $name : already exists, skip"
-              continue
-            }
 
+            $created = $false
+
+            # Attempt 1: Symbolic link
             try {
               New-Item -ItemType SymbolicLink -Path $linkPath -Target $rootPath -ErrorAction Stop | Out-Null
               Write-Host "  $name : symlink OK"
+              $created = $true
             } catch {
-              Write-Host "  $name : symlink failed, trying junction..."
-              cmd /c mklink /J "$linkPath" "$rootPath"
+              # Attempt 2: Junction (no privilege required)
+              $null = cmd /c "mklink /J `"$linkPath`" `"$rootPath`"" 2>&1
               if ($LASTEXITCODE -eq 0) {
                 Write-Host "  $name : junction OK"
+                $created = $true
               } else {
-                Write-Host "  $name : FAILED"
+                # Attempt 3: Copy directory (ultimate fallback)
+                try {
+                  Copy-Item -Path $rootPath -Destination $linkPath -Recurse -Force -ErrorAction Stop
+                  Write-Host "  $name : copy OK (fallback)"
+                  $created = $true
+                } catch {
+                  Write-Host "  $name : FAILED - $_"
+                }
               }
             }
           }
