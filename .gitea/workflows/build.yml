@@ -169,16 +169,17 @@ jobs:
 
       - name: Enable Windows Developer Mode (symlink support)
         shell: bash
+        env:
+          MSYS_NO_PATHCONV: "1"
         run: |
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" \
-            /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d 1
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v AllowDevelopmentWithoutDevLicense /d 1
           echo "--- Verifying symlink capability ---"
           tmpdir=$(mktemp -d)
           touch "$tmpdir/target.txt"
           if cmd //c "mklink \"${tmpdir}\\link.txt\" \"${tmpdir}\\target.txt\"" 2>/dev/null; then
             echo "Symlink creation: OK"
           else
-            echo "Symlink creation: STILL FAILED — Developer Mode may require container restart"
+            echo "Symlink creation: STILL FAILED - Developer Mode may require container restart"
           fi
           rm -rf "$tmpdir"
 
