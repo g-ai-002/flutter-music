@@ -86,7 +86,7 @@ jobs:
           echo "=== Flutter version ==="
           flutter --version
           echo "=== Flutter doctor ==="
-          flutter doctor -v
+          timeout 10 flutter doctor -v || true
           echo "=== Environment variables ==="
           echo "FLUTTER_STORAGE_BASE_URL=${FLUTTER_STORAGE_BASE_URL:-<not set>}"
           echo "PUB_HOSTED_URL=${PUB_HOSTED_URL:-<not set>}"
@@ -136,7 +136,7 @@ jobs:
           echo "=== Flutter version ==="
           flutter --version
           echo "=== Flutter doctor ==="
-          flutter doctor -v
+          timeout 10 flutter doctor -v || true
 
       - name: Install dependencies
         shell: bash
