@@ -130,6 +130,7 @@ jobs:
         uses: http://192.168.31.120:3020/actions/checkout@v6
 
       - name: Diagnose Flutter environment
+        if: false
         shell: bash
         run: |
           id
@@ -163,6 +164,21 @@ jobs:
             echo "Symlink creation via mklink: OK"
           else
             echo "Symlink creation via mklink: FAILED"
+          fi
+          rm -rf "$tmpdir"
+
+      - name: Enable Windows Developer Mode (symlink support)
+        shell: bash
+        run: |
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" \
+            /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d 1
+          echo "--- Verifying symlink capability ---"
+          tmpdir=$(mktemp -d)
+          touch "$tmpdir/target.txt"
+          if cmd //c "mklink \"${tmpdir}\\link.txt\" \"${tmpdir}\\target.txt\"" 2>/dev/null; then
+            echo "Symlink creation: OK"
+          else
+            echo "Symlink creation: STILL FAILED — Developer Mode may require container restart"
           fi
           rm -rf "$tmpdir"
 
