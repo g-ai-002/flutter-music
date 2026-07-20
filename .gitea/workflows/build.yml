@@ -150,8 +150,9 @@ jobs:
         run: |
           $ErrorActionPreference = 'Continue'
           flutter pub get 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "`n=== flutter pub get failed (exit $LASTEXITCODE), creating plugin symlinks manually ==="
+          $pubFailed = $LASTEXITCODE
+          if ($pubFailed -ne 0) {
+            Write-Host "`n=== flutter pub get failed (exit $pubFailed), creating plugin symlinks manually ==="
           }
 
           $symlinksDir = "windows\flutter\ephemeral\.plugin_symlinks"
@@ -160,15 +161,6 @@ jobs:
           Remove-Item -Recurse -Force $symlinksDir -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $symlinksDir | Out-Null
 
-          # Verify write access
-          try {
-            "test" | Set-Content "$symlinksDir\__test.txt"
-            Remove-Item "$symlinksDir\__test.txt"
-          } catch {
-            Write-Host "FATAL: Cannot write to $symlinksDir : $_"
-            exit 1
-          }
-
           $configFile = ".dart_tool\package_config.json"
           if (-not (Test-Path $configFile)) {
             Write-Host "WARNING: $configFile not found"
@@ -176,45 +168,54 @@ jobs:
           }
 
           $config = Get-Content $configFile -Raw | ConvertFrom-Json
+          $failCount = 0
+
           foreach ($pkg in $config.packages) {
             if ($pkg.rootUri -notmatch '^file:///') { continue }
 
             $name = $pkg.name
             $rootPath = ($pkg.rootUri -replace '^file:///', '' -replace '/', '\').TrimEnd('\')
 
-            $windowsDir = Join-Path $rootPath "windows"
-            if (-not (Test-Path $windowsDir -PathType Container)) { continue }
+            # Check if this package is a Flutter plugin (pubspec.yaml has flutter.plugin)
+            $pubspecFile = Join-Path $rootPath "pubspec.yaml"
+            if (-not (Test-Path $pubspecFile)) { continue }
+            $pubspecContent = Get-Content $pubspecFile -Raw -ErrorAction SilentlyContinue
+            if (-not $pubspecContent -or ($pubspecContent -notmatch '(?m)^\s+plugin:')) { continue }
 
             $linkPath = Join-Path $symlinksDir $name
-
-            $created = $false
 
             # Attempt 1: Symbolic link
             try {
               New-Item -ItemType SymbolicLink -Path $linkPath -Target $rootPath -ErrorAction Stop | Out-Null
               Write-Host "  $name : symlink OK"
-              $created = $true
+              continue
+            } catch {}
+
+            # Attempt 2: Junction (no privilege required)
+            $null = cmd /c "mklink /J `"$linkPath`" `"$rootPath`"" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "  $name : junction OK"
+              continue
+            }
+
+            # Attempt 3: Copy directory (ultimate fallback)
+            try {
+              Copy-Item -Path $rootPath -Destination $linkPath -Recurse -Force -ErrorAction Stop
+              Write-Host "  $name : copy OK (fallback)"
             } catch {
-              # Attempt 2: Junction (no privilege required)
-              $null = cmd /c "mklink /J `"$linkPath`" `"$rootPath`"" 2>&1
-              if ($LASTEXITCODE -eq 0) {
-                Write-Host "  $name : junction OK"
-                $created = $true
-              } else {
-                # Attempt 3: Copy directory (ultimate fallback)
-                try {
-                  Copy-Item -Path $rootPath -Destination $linkPath -Recurse -Force -ErrorAction Stop
-                  Write-Host "  $name : copy OK (fallback)"
-                  $created = $true
-                } catch {
-                  Write-Host "  $name : FAILED - $_"
-                }
-              }
+              Write-Host "  $name : FAILED - $_"
+              $failCount++
             }
           }
 
           Write-Host "`n=== Plugin symlinks ==="
           Get-ChildItem $symlinksDir -ErrorAction SilentlyContinue | Format-Table Name, LinkType, Target
+
+          if ($failCount -gt 0) {
+            Write-Host "`n$failCount plugin(s) failed to link/copy"
+            exit 1
+          }
+          exit 0
 
       - name: Generate Windows platform files
         shell: bash
