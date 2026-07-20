@@ -129,21 +129,26 @@ jobs:
       - name: Checkout code
         uses: http://192.168.31.120:3020/actions/checkout@v6
 
-      - name: Build Windows EXE
-        shell: pwsh
+      - name: Diagnose Flutter environment
+        shell: bash
         run: |
-          $ws = (Get-Location).Path
-          Remove-Item -Recurse -Force C:\build_src -ErrorAction SilentlyContinue
-          robocopy $ws C:\build_src /E /XD .git /NJH /NJS /NFL /NDL
-          $global:LASTEXITCODE = 0
-          Set-Location C:\build_src
-          flutter pub get
-          flutter create --platforms=windows --project-name test .
-          flutter build windows --release
-          $src = "build\windows\x64\runner\Release"
-          $dst = Join-Path $ws $src
-          New-Item -ItemType Directory -Force -Path $dst | Out-Null
-          Copy-Item -Recurse -Force "$src\*" $dst
+          id
+          echo "=== Flutter version ==="
+          flutter --version
+          echo "=== Flutter doctor ==="
+          flutter doctor -v
+
+      - name: Install dependencies
+        shell: bash
+        run: flutter pub get
+
+      - name: Generate Windows platform files
+        shell: bash
+        run: flutter create --platforms=windows --project-name test .
+
+      - name: Build Windows
+        shell: bash
+        run: flutter build windows --release
 
       - name: List build output
         shell: bash
