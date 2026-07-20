@@ -138,6 +138,34 @@ jobs:
           echo "=== Flutter doctor ==="
           flutter doctor -v
 
+      - name: Diagnose symlink permissions
+        shell: bash
+        run: |
+          echo "=== Current user ==="
+          whoami
+          echo "=== Admin / Elevated check ==="
+          net session >/dev/null 2>&1 && echo "Running as ADMIN" || echo "NOT admin"
+          echo "=== Developer Mode (registry) ==="
+          reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /v AllowDevelopmentWithoutDevLicense 2>/dev/null \
+            || echo "Developer Mode key not found (likely OFF)"
+          echo "=== Privileges (SeCreateSymbolicLinkPrivilege) ==="
+          whoami //priv 2>/dev/null | grep -i "SeCreateSymbolicLink" \
+            || echo "SeCreateSymbolicLinkPrivilege NOT found in current token"
+          echo "=== Test: create a symlink ==="
+          tmpdir=$(mktemp -d)
+          touch "$tmpdir/target.txt"
+          if ln -s "$tmpdir/target.txt" "$tmpdir/link.txt" 2>/dev/null; then
+            echo "Symlink creation via ln -s: OK"
+          else
+            echo "Symlink creation via ln -s: FAILED"
+          fi
+          if cmd //c "mklink \"${tmpdir}\\cmd_link\" \"${tmpdir}\\target.txt\"" 2>/dev/null; then
+            echo "Symlink creation via mklink: OK"
+          else
+            echo "Symlink creation via mklink: FAILED"
+          fi
+          rm -rf "$tmpdir"
+
       - name: Install dependencies
         shell: bash
         run: flutter pub get
