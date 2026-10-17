@@ -39,6 +39,9 @@
   - [x] Android 添加 POST_NOTIFICATIONS 权限声明
   - [x] 启动时请求通知运行时权限（Android 13+）
   - [x] audio_handler 移除 _hasDuration 条件，始终启用 systemActions.seek
+  - [x] 升级 Flutter 至 3.47.7、Dart SDK 下限对齐至 3.13.5
+  - [x] 升级 Android 构建链（compileSdk 37 / targetSdk 37 / minSdk 35、NDK 30.0.16248370）
+  - [x] 工作流与文档同步 Flutter 3.47.7（对齐 flutter-snake 已验证配置）
 
 ### v0.3.1 (PATCH)
 - **状态**: 已提交 🚧
@@ -149,11 +152,15 @@
 - **包体克制**：当前依赖均为成熟稳定的纯 Dart / Flutter 插件，避免引入大型原生 SDK。
 
 ## 依赖与版本基线
-- Flutter: 3.44.1
+- Flutter: 3.47.7
+- Dart: 3.13.5（对应 Flutter 3.47.7 内置 Dart SDK）
+- Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
 - just_audio: 0.10.5
+- just_audio_windows: 0.2.3
+- audio_service: 0.18.18
 - audio_session: 0.2.3
 - audio_metadata_reader: 1.6.0
-- file_picker: 11.0.2
+- file_picker: 10.3.10
 - permission_handler: 12.0.3
 - provider: 6.1.5+1
 - window_manager: 0.5.1

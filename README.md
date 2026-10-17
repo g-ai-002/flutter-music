@@ -24,7 +24,7 @@
 
 最低系统要求：
 - Windows 10 及以上
-- Android 14（minSdk=34，targetSdk/compileSdk=36，仅打包 arm64-v8a）
+- Android 15（minSdk=35，targetSdk/compileSdk=37，仅打包 arm64-v8a）
 
 ## 使用
 
@@ -62,7 +62,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 技术栈
 
-- Flutter 3.44.1, Material 3
+- Flutter 3.47.7, Material 3
 - just_audio + just_audio_background + audio_session（音频播放 / 后台 / 通知栏）
 - audio_metadata_reader（元数据 + 嵌入封面）
 - file_picker（目录选择）

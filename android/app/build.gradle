@@ -24,8 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.flutter.music"
-    compileSdk 36
-    ndkVersion "29.0.14206865"
+    compileSdk 37
+    ndkVersion "30.0.16248370"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -43,8 +43,8 @@ android {
 
     defaultConfig {
         applicationId "com.flutter.music"
-        minSdk 34
-        targetSdk 36
+        minSdk 35
+        targetSdk 37
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         ndk {
