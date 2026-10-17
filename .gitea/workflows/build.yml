@@ -1,6 +1,9 @@
 name: Build and Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 concurrency:
@@ -48,7 +51,7 @@ jobs:
     name: Run Dart tests
     steps:
       - name: Checkout code
-        uses: http://192.168.31.120:3020/actions/checkout@v6
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: flutter pub get
@@ -68,7 +71,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: http://192.168.31.120:3020/actions/checkout@v6
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: flutter pub get
@@ -113,7 +116,7 @@ jobs:
           mv build/app/outputs/flutter-apk/app-release.apk ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
 
       - name: Upload Android artifact
-        uses: http://192.168.31.120:3020/actions/gitea-upload-artifact@v4
+        uses: actions/gitea-upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
           path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
@@ -127,7 +130,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: http://192.168.31.120:3020/actions/checkout@v6
+        uses: actions/checkout@v6
 
       - name: Diagnose Flutter environment
         shell: bash
@@ -185,7 +188,7 @@ jobs:
           mv -f windows.zip "./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip"
 
       - name: Upload Windows artifact
-        uses: http://192.168.31.120:3020/actions/gitea-upload-artifact@v4
+        uses: actions/gitea-upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
           path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
@@ -200,12 +203,12 @@ jobs:
 
     steps:
       - name: Checkout code (for changelog)
-        uses: http://192.168.31.120:3020/actions/checkout@v6
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Download Android artifact
-        uses: http://192.168.31.120:3020/actions/gitea-download-artifact@v8
+        uses: actions/gitea-download-artifact@v8
         with:
           name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
           path: artifacts
