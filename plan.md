@@ -18,6 +18,7 @@
 - [x] 收藏 / 最近播放
 - [x] 后台播放 + 通知栏控制（just_audio_background）
 - [x] 歌单（用户自建）
+- [x] 双流水线构建与发布（GitHub Actions / Gitea Actions，push tag 自动发布 Windows + Android 交付件）
 - [ ] 均衡器 / 倍速播放
 - [ ] 音频可视化（频谱）
 - [ ] 自适应布局（折叠屏/平板/桌面）进一步打磨
@@ -29,6 +30,17 @@
 
 ## 版本历史
 
+### v0.3.46 (PATCH)
+- **状态**: 开发完成 ✅
+- **目标**: 构建链与双流水线对齐参考项目 flutter-snake（无功能变化）
+- **任务**:
+  - [x] 升级 Flutter 至 3.47.7、Dart SDK 下限对齐至 3.13.5
+  - [x] 升级 Android 构建链（compileSdk 37 / targetSdk 37 / minSdk 35、NDK 30.0.16248370）
+  - [x] 两条流水线对齐 flutter-snake 已验证模板：步骤名中文化 + `run-name`，metadata 作业从 `pubspec.yaml` 解析版本号，`flutter create` 改用动态 project_name，release 同时发布 Android APK 与 Windows ZIP
+  - [x] 移除已失效的 `requestLegacyExternalStorage`、`.gitignore` 忽略 `.qwen`、删除过期的构建耗时分析报告
+  - [x] 文档同步：README 技术栈 / 最低系统要求、plan 依赖与版本基线
+  - [x] 版本号 0.3.45 → 0.3.46（`pubspec.yaml` 与 `AppConstants.version` 同步）
+
 ### v0.3.10 (PATCH)
 - **状态**: 开发中 🚧
 - **目标**: 全局搜索框重构 + 通知栏进度修复
@@ -39,9 +51,6 @@
   - [x] Android 添加 POST_NOTIFICATIONS 权限声明
   - [x] 启动时请求通知运行时权限（Android 13+）
   - [x] audio_handler 移除 _hasDuration 条件，始终启用 systemActions.seek
-  - [x] 升级 Flutter 至 3.47.7、Dart SDK 下限对齐至 3.13.5
-  - [x] 升级 Android 构建链（compileSdk 37 / targetSdk 37 / minSdk 35、NDK 30.0.16248370）
-  - [x] 工作流与文档同步 Flutter 3.47.7（对齐 flutter-snake 已验证配置）
 
 ### v0.3.1 (PATCH)
 - **状态**: 已提交 🚧

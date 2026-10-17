@@ -71,6 +71,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.3.46**：构建链与流水线对齐参考项目（无功能变化）。Flutter 升至 3.47.7（Dart ≥3.13.5），Android 基线升至 compileSdk=targetSdk=37 / minSdk=35 / NDK 30.0.16248370；GitHub 与 Gitea 两条流水线的步骤名中文化并新增 `run-name`，版本号统一从 `pubspec.yaml` 解析（不再硬编码），生成 Windows 平台文件改用动态项目名，tag 发布时同时附上 Android APK 与 Windows ZIP。
 - **v0.3.0**：用户自建歌单。新增「歌单」Tab，支持新建 / 重命名 / 删除（删除歌单不会删除磁盘上的歌曲）；歌曲行尾「…」菜单 / 大播放器新增「添加到歌单」入口，可直接选择已有歌单或现场新建；歌单详情页支持「播放全部」、单曲移除、失效曲目计数提示。歌单以歌曲绝对路径引用，独立于歌曲库缓存，重新扫描后引用关系保持不变。
 - **v0.2.1**：代码重构与性能优化（无新功能）。提取 FavoriteToggleButton 公共组件；抽出 PlayerPositionBuilder / PlayingStateBuilder，去除嵌套 ValueListenableBuilder 重复；PlayerProvider 新增 playingListenable 避免播放/暂停时整页重建；随机播放改为 Fisher-Yates 洗牌，一轮内每首歌只播一次；LibraryProvider 缓存 filtered 避免每次 build 重新过滤；LibraryPage 拆分 Tab 为独立 widget，统一空态组件；新增 LibraryProvider 搜索 / LyricParser 边界单测。
 - **v0.2.0**：嵌入式封面（无同目录封面时自动回退到 ID3/Vorbis 嵌入封面，带 LRU 缓存）；收藏 / 最近播放（音乐库新增「歌曲/收藏/最近」三个 Tab，歌曲行与大播放器加心形按钮，最近一键清空）；接入 `just_audio_background` 实现后台播放与通知栏元数据同步（标题/艺术家/专辑/封面）。
