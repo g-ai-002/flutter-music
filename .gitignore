@@ -15,11 +15,6 @@ android/app/build/
 android/build/
 android/local.properties
 
-# Android 签名（含密码与私钥，禁止入库）
-android/key.properties
-*.jks
-*.keystore
-
 # Windows
 windows/
 
