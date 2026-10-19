@@ -45,13 +45,13 @@
 | Shared Preferences (`shared_preferences`)       | `2.5.6`   | `2.5.6` (已是最新)   | `2.5.6` (已是最新)   | `2.5.6` (已是最新)   | `pubspec.yaml` | 键值本地存储               | dependencies |
 | Path Provider (`path_provider`)                 | `2.1.6`   | `2.1.6` (已是最新)   | `2.1.6` (已是最新)   | `2.1.6` (已是最新)   | `pubspec.yaml` | 平台目录定位               | dependencies |
 | Path (`path`)                                   | `1.9.1`   | `1.9.1` (已是最新)   | `1.9.1` (已是最新)   | `1.9.1` (已是最新)   | `pubspec.yaml` | 路径处理                   | dependencies |
-| Just Audio (`just_audio`)                       | `0.10.5`  | `0.10.6`             | `0.10.6`             | `0.10.6`             | `pubspec.yaml` | 音频播放                   | dependencies |
+| Just Audio (`just_audio`)                       | `0.10.6`  | `0.10.6` (已是最新)  | `0.10.6` (已是最新)  | `0.10.6` (已是最新)  | `pubspec.yaml` | 音频播放                   | dependencies |
 | Just Audio Windows (`just_audio_windows`)       | `0.2.3`   | `0.2.3` (已是最新)   | `0.2.3` (已是最新)   | `0.2.3` (已是最新)   | `pubspec.yaml` | Just Audio 的 Windows 实现 | dependencies |
-| Audio Service (`audio_service`)                 | `0.18.18` | `0.18.19`            | `0.18.19`            | `0.18.19`            | `pubspec.yaml` | 后台音频服务               | dependencies |
-| Audio Session (`audio_session`)                 | `0.2.3`   | `0.2.4`              | `0.2.4`              | `0.2.4`              | `pubspec.yaml` | 音频会话管理               | dependencies |
-| Audio Metadata Reader (`audio_metadata_reader`) | `1.6.0`   | `1.8.1`              | `1.8.1`              | `1.6.0` (已是最新)   | `pubspec.yaml` | 音频元数据读取             | dependencies |
-| File Picker (`file_picker`)                     | `10.3.10` | `13.1.0`             | `10.3.11`            | `10.3.11`            | `pubspec.yaml` | 文件选择器                 | dependencies |
-| Permission Handler (`permission_handler`)       | `12.0.3`  | `13.0.2`             | `12.0.3` (已是最新)  | `12.0.3` (已是最新)  | `pubspec.yaml` | 运行时权限管理             | dependencies |
+| Audio Service (`audio_service`)                 | `0.18.19` | `0.18.19` (已是最新) | `0.18.19` (已是最新) | `0.18.19` (已是最新) | `pubspec.yaml` | 后台音频服务               | dependencies |
+| Audio Session (`audio_session`)                 | `0.2.4`   | `0.2.4` (已是最新)   | `0.2.4` (已是最新)   | `0.2.4` (已是最新)   | `pubspec.yaml` | 音频会话管理               | dependencies |
+| Audio Metadata Reader (`audio_metadata_reader`) | `1.8.1`   | `1.8.1` (已是最新)   | `1.8.1` (已是最新)   | `1.8.1` (已是最新)   | `pubspec.yaml` | 音频元数据读取             | dependencies |
+| File Picker (`file_picker`)                     | `13.1.0`  | `13.1.0` (已是最新)  | `13.1.0` (已是最新)  | `13.1.0` (已是最新)  | `pubspec.yaml` | 文件选择器                 | dependencies |
+| Permission Handler (`permission_handler`)       | `13.0.2`  | `13.0.2` (已是最新)  | `13.0.2` (已是最新)  | `13.0.2` (已是最新)  | `pubspec.yaml` | 运行时权限管理             | dependencies |
 | Window Manager (`window_manager`)               | `0.5.2`   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `pubspec.yaml` | 桌面窗口管理（Windows）    | dependencies |
 
 ## 2. Flutter 开发依赖

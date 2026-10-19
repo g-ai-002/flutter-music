@@ -164,15 +164,15 @@
 - Flutter: 3.47.7
 - Dart: 3.13.5（对应 Flutter 3.47.7 内置 Dart SDK）
 - Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
-- just_audio: 0.10.5
+- just_audio: 0.10.6
 - just_audio_windows: 0.2.3
-- audio_service: 0.18.18
-- audio_session: 0.2.3
-- audio_metadata_reader: 1.6.0
-- file_picker: 10.3.10
-- permission_handler: 12.0.3
+- audio_service: 0.18.19
+- audio_session: 0.2.4
+- audio_metadata_reader: 1.8.1
+- file_picker: 13.1.0
+- permission_handler: 13.0.2
 - provider: 6.1.5+1
-- window_manager: 0.5.1
-- shared_preferences: 2.5.5
-- path_provider: 2.1.5
+- window_manager: 0.5.2
+- shared_preferences: 2.5.6
+- path_provider: 2.1.6
 - path: 1.9.1
