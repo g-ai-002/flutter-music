@@ -30,6 +30,17 @@
 
 ## 版本历史
 
+### v0.3.47 (PATCH)
+- **状态**: 开发完成 ✅
+- **目标**: 构建与依赖维护（无功能变化）
+- **任务**:
+  - [x] Windows 构建迁移到短路径并统一日志输出
+  - [x] Android 签名统一为长期 release keystore：debug 与 release 共用签名，`key.properties` 与 `flutter-music.jks` 纳入版本管理，移除无用 `debug.keystore`
+  - [x] 升级 just_audio、audio_service、audio_session、audio_metadata_reader、file_picker、permission_handler、shared_preferences、path_provider、window_manager 九个依赖，settings_page 适配 file_picker 13.x 静态方法调用
+  - [x] 补充代码风格与 const 相关静态检查规则
+  - [x] 新增版本清单 `versions.md` 与自动生成脚本 `.build/query_all_versions.py`
+  - [x] 版本号 0.3.46 → 0.3.47（`pubspec.yaml` 与 `AppConstants.version` 同步）
+
 ### v0.3.46 (PATCH)
 - **状态**: 开发完成 ✅
 - **目标**: 构建链与双流水线对齐参考项目 flutter-snake（无功能变化）
