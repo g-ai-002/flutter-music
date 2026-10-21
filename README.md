@@ -71,6 +71,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.3.48**：构建链维护（无功能变化）。Android 构建链升级 Gradle 9.5.1 → 9.8.2、AGP 9.2.1 → 9.4.1、Kotlin 2.3.21 → 2.4.21。
 - **v0.3.47**：构建与依赖维护（无功能变化）。Windows 构建迁移到短路径并统一日志输出；Android 签名统一为长期 release keystore（debug 与 release 共用签名便于覆盖安装，`key.properties` 与 `flutter-music.jks` 随仓库管理，移除无用的 `debug.keystore`）；升级 just_audio、file_picker、audio_service 等九个依赖（file_picker 13.x 改为静态方法调用）；补充代码风格与 const 相关静态检查规则；新增 `versions.md` 版本清单与自动生成脚本。
 - **v0.3.46**：构建链与流水线对齐参考项目（无功能变化）。Flutter 升至 3.47.7（Dart ≥3.13.5），Android 基线升至 compileSdk=targetSdk=37 / minSdk=35 / NDK 30.0.16248370；GitHub 与 Gitea 两条流水线的步骤名中文化并新增 `run-name`，版本号统一从 `pubspec.yaml` 解析（不再硬编码），生成 Windows 平台文件改用动态项目名，tag 发布时同时附上 Android APK 与 Windows ZIP。
 - **v0.3.0**：用户自建歌单。新增「歌单」Tab，支持新建 / 重命名 / 删除（删除歌单不会删除磁盘上的歌曲）；歌曲行尾「…」菜单 / 大播放器新增「添加到歌单」入口，可直接选择已有歌单或现场新建；歌单详情页支持「播放全部」、单曲移除、失效曲目计数提示。歌单以歌曲绝对路径引用，独立于歌曲库缓存，重新扫描后引用关系保持不变。
