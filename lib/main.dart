@@ -16,6 +16,7 @@ import 'providers/player_provider.dart';
 import 'providers/playlists_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/audio_handler.dart';
+import 'services/file_system_service.dart';
 import 'services/log_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
@@ -42,7 +43,7 @@ Future<void> main() async {
 
   // 必须先初始化存储和日志，避免后续并发触发 late init 错误
   final storage = await StorageService.instance;
-  await LogService.init();
+  await LogService.init(logRoot: FileSystemService.instance.getLogRoot);
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
   // 创建 AudioPlayer 供 audio_service 和 PlayerProvider 共用
@@ -75,7 +76,7 @@ Future<void> main() async {
     LogService.warning('配置音频会话失败: $e');
   }
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+  SystemChrome.setSystemUIOverlayStyle(const SystemUIOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
