@@ -76,7 +76,7 @@ Future<void> main() async {
     LogService.warning('配置音频会话失败: $e');
   }
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUIOverlayStyle(
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
