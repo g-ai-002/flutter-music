@@ -42,7 +42,7 @@
 - Windows：`%USERPROFILE%\Documents\FlutterMusic\logs\`
 - Android：`/storage/emulated/0/Android/data/com.flutter.music/files/FlutterMusic/logs/`
 
-在「设置」→「关于」→「查看日志路径」可一键打开（桌面端）。
+「设置」→「关于」→「日志目录」可复制或打开目录（桌面端），「查看日志」可查看最近日志并一键复制。
 
 ## 本地开发
 
