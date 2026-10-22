@@ -71,6 +71,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.3.49**：日志系统统一与日志查看能力。日志服务对齐标准实现（早期缓冲 / 跨天切换 / 清理轮转 / 目录不可用降级内存模式）；设置页新增「日志目录」条目（复制路径 / 打开目录）与「查看日志」弹窗（刷新 / 复制全部）；CI 工作流补齐「诊断网络与 Flutter 环境」步骤（`timeout 10` 防挂起 + 网络连通性检查）。
 - **v0.3.48**：构建链维护（无功能变化）。Android 构建链升级 Gradle 9.5.1 → 9.8.2、AGP 9.2.1 → 9.4.1、Kotlin 2.3.21 → 2.4.21。
 - **v0.3.47**：构建与依赖维护（无功能变化）。Windows 构建迁移到短路径并统一日志输出；Android 签名统一为长期 release keystore（debug 与 release 共用签名便于覆盖安装，`key.properties` 与 `flutter-music.jks` 随仓库管理，移除无用的 `debug.keystore`）；升级 just_audio、file_picker、audio_service 等九个依赖（file_picker 13.x 改为静态方法调用）；补充代码风格与 const 相关静态检查规则；新增 `versions.md` 版本清单与自动生成脚本。
 - **v0.3.46**：构建链与流水线对齐参考项目（无功能变化）。Flutter 升至 3.47.7（Dart ≥3.13.5），Android 基线升至 compileSdk=targetSdk=37 / minSdk=35 / NDK 30.0.16248370；GitHub 与 Gitea 两条流水线的步骤名中文化并新增 `run-name`，版本号统一从 `pubspec.yaml` 解析（不再硬编码），生成 Windows 平台文件改用动态项目名，tag 发布时同时附上 Android APK 与 Windows ZIP。
