@@ -33,7 +33,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.flutter.music"
-    compileSdk 37
+    compileSdkVersion "android-37.2"
     ndkVersion "30.0.16248370"
 
     compileOptions {
