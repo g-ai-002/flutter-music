@@ -16,7 +16,7 @@
 - [x] 日志系统（按日落盘到用户目录 logs/）
 - [x] 嵌入式封面（ID3/Vorbis APIC）展示
 - [x] 收藏 / 最近播放
-- [x] 后台播放 + 通知栏控制（just_audio_background）
+- [x] 后台播放 + 通知栏控制（audio_service）
 - [x] 歌单（用户自建）
 - [x] 双流水线构建与发布（GitHub Actions / Gitea Actions，push tag 自动发布 Windows + Android 交付件）
 - [ ] 均衡器 / 倍速播放
@@ -29,6 +29,24 @@
 ---
 
 ## 版本历史
+
+### v0.3.51 (PATCH)
+- **状态**: 已发布 ✅
+- **目标**: 构建配置收尾与仓库卫生（无功能变化）
+- **任务**:
+  - [x] Android compileSdk 统一为 `android-37.2`：`:app` 直接声明，非 `:app` 子项目尝试直接应用/延迟设置后最终回退为不强制覆盖
+  - [x] `.gitignore` 统一为基准模板，FileSystemService 收敛为最小契约
+  - [x] 版本清单脚本适配 `compileSdkVersion "android-37.2"`，`versions.md` 的 compileSdk 修正为 37.2
+  - [x] 版本号 0.3.50 → 0.3.51（`pubspec.yaml` 与 `AppConstants.version` 同步）
+
+### v0.3.50 (PATCH)
+- **状态**: 已发布 ✅
+- **目标**: CI 与构建资源约束（无功能变化）
+- **任务**:
+  - [x] GitHub / Gitea 构建任务增加 30 分钟超时
+  - [x] 限制 Gradle 与 Kotlin 守护进程资源占用，测试并发与 Windows CMake 并行降为 2
+  - [x] 版本清单脚本兼容缺失 Gitea 工作流的仓库
+  - [x] 版本号 0.3.49 → 0.3.50（`pubspec.yaml` 与 `AppConstants.version` 同步）
 
 ### v0.3.49 (PATCH)
 - **状态**: 开发完成 ✅
@@ -190,7 +208,7 @@
 ## 依赖与版本基线
 - Flutter: 3.47.7
 - Dart: 3.13.5（对应 Flutter 3.47.7 内置 Dart SDK）
-- Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
+- Android SDK: compileSdk=37.2 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
 - just_audio: 0.10.6
 - just_audio_windows: 0.2.3
 - audio_service: 0.18.19

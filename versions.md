@@ -27,7 +27,7 @@
 | 应用内版本号 (`lib/utils/constants.dart`) | 0.3.51                             |
 | Flutter SDK（CI 固定版本）                | 3.47.7                             |
 | Dart SDK 约束                             | >=3.13.5 <4.0.0                    |
-| compileSdk / targetSdk                    | 37 / 37                            |
+| compileSdk / targetSdk                    | 37.2 / 37                          |
 | minSdk                                    | 35                                 |
 | NDK                                       | 30.0.16248370                      |
 | Java (source/target)                      | 21                                 |
@@ -50,7 +50,7 @@
 | Audio Service (`audio_service`)                 | `0.18.19` | `0.18.19` (已是最新) | `0.18.19` (已是最新) | `0.18.19` (已是最新) | `pubspec.yaml` | 后台音频服务               | dependencies |
 | Audio Session (`audio_session`)                 | `0.2.4`   | `0.2.4` (已是最新)   | `0.2.4` (已是最新)   | `0.2.4` (已是最新)   | `pubspec.yaml` | 音频会话管理               | dependencies |
 | Audio Metadata Reader (`audio_metadata_reader`) | `1.8.1`   | `1.8.1` (已是最新)   | `1.8.1` (已是最新)   | `1.8.1` (已是最新)   | `pubspec.yaml` | 音频元数据读取             | dependencies |
-| File Picker (`file_picker`)                     | `13.1.0`  | `13.1.0` (已是最新)  | `13.1.0` (已是最新)  | `13.1.0` (已是最新)  | `pubspec.yaml` | 文件选择器                 | dependencies |
+| File Picker (`file_picker`)                     | `13.1.0`  | `13.2.0`             | `13.2.0`             | `13.1.0` (已是最新)  | `pubspec.yaml` | 文件选择器                 | dependencies |
 | Permission Handler (`permission_handler`)       | `13.0.2`  | `13.0.2` (已是最新)  | `13.0.2` (已是最新)  | `13.0.2` (已是最新)  | `pubspec.yaml` | 运行时权限管理             | dependencies |
 | Window Manager (`window_manager`)               | `0.5.2`   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `pubspec.yaml` | 桌面窗口管理（Windows）    | dependencies |
 

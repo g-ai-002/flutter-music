@@ -24,7 +24,7 @@
 
 最低系统要求：
 - Windows 10 及以上
-- Android 15（minSdk=35，targetSdk/compileSdk=37，仅打包 arm64-v8a）
+- Android 15（minSdk=35，targetSdk=37 / compileSdk=37.2，仅打包 arm64-v8a）
 
 ## 使用
 
@@ -63,7 +63,7 @@ flutter build windows        # Windows（需在 Windows 上）
 ## 技术栈
 
 - Flutter 3.47.7, Material 3
-- just_audio + just_audio_background + audio_session（音频播放 / 后台 / 通知栏）
+- just_audio + audio_service + audio_session（音频播放 / 后台 / 通知栏）
 - audio_metadata_reader（元数据 + 嵌入封面）
 - file_picker（目录选择）
 - permission_handler（Android 13+ 媒体权限）
@@ -71,6 +71,8 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 版本历史
 
+- **v0.3.51**：构建配置收尾与仓库卫生（无功能变化）。Android compileSdk 统一为 `android-37.2`（`:app` 直接声明，非 `:app` 子项目最终不强制覆盖）；`.gitignore` 统一为基准模板；FileSystemService 收敛为最小契约。
+- **v0.3.50**：CI 与构建资源约束（无功能变化）。构建任务 30 分钟超时，Gradle `-Xmx3G` / 2 workers、Kotlin 守护进程 1G、测试并发 2、Windows CMake 并行 2；版本清单脚本兼容缺失 Gitea 工作流。
 - **v0.3.49**：日志系统统一与日志查看能力。日志服务对齐标准实现（早期缓冲 / 跨天切换 / 清理轮转 / 目录不可用降级内存模式）；设置页新增「日志目录」条目（复制路径 / 打开目录）与「查看日志」弹窗（刷新 / 复制全部）；CI 工作流补齐「诊断网络与 Flutter 环境」步骤（`timeout 10` 防挂起 + 网络连通性检查）。
 - **v0.3.48**：构建链维护（无功能变化）。Android 构建链升级 Gradle 9.5.1 → 9.8.2、AGP 9.2.1 → 9.4.1、Kotlin 2.3.21 → 2.4.21。
 - **v0.3.47**：构建与依赖维护（无功能变化）。Windows 构建迁移到短路径并统一日志输出；Android 签名统一为长期 release keystore（debug 与 release 共用签名便于覆盖安装，`key.properties` 与 `flutter-music.jks` 随仓库管理，移除无用的 `debug.keystore`）；升级 just_audio、file_picker、audio_service 等九个依赖（file_picker 13.x 改为静态方法调用）；补充代码风格与 const 相关静态检查规则；新增 `versions.md` 版本清单与自动生成脚本。
