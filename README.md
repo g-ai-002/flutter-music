@@ -62,7 +62,7 @@ flutter build windows        # Windows（需在 Windows 上）
 
 ## 技术栈
 
-- Flutter 3.47.7, Material 3
+- Flutter 3.47.8, Material 3
 - just_audio + audio_service + audio_session（音频播放 / 后台 / 通知栏）
 - audio_metadata_reader（元数据 + 嵌入封面）
 - file_picker（目录选择）
