@@ -10,6 +10,7 @@ import '../services/storage_service.dart';
 class PlaylistsProvider extends ChangeNotifier {
   final StorageService _storage;
   late List<Playlist> _items;
+  int _idSeq = 0;
 
   PlaylistsProvider(this._storage) {
     _items = List<Playlist>.from(_storage.loadPlaylists());
@@ -34,6 +35,18 @@ class PlaylistsProvider extends ChangeNotifier {
     return false;
   }
 
+  /// 生成不与现有歌单冲突的 id
+  ///
+  /// Windows 的时钟粒度约 15ms，连续创建会取到相同的微秒值，重复时追加自增序号。
+  String _nextId() {
+    final base = DateTime.now().microsecondsSinceEpoch;
+    var id = 'pl_$base';
+    while (byId(id) != null) {
+      id = 'pl_${base}_${++_idSeq}';
+    }
+    return id;
+  }
+
   /// 创建歌单，名称重复时抛出 `ArgumentError`
   Future<Playlist> create(String name) async {
     final trimmed = name.trim();
@@ -43,10 +56,7 @@ class PlaylistsProvider extends ChangeNotifier {
     if (_nameTaken(trimmed)) {
       throw ArgumentError('歌单名已存在');
     }
-    final pl = Playlist(
-      id: 'pl_${DateTime.now().microsecondsSinceEpoch}',
-      name: trimmed,
-    );
+    final pl = Playlist(id: _nextId(), name: trimmed);
     _items = [pl, ..._items];
     await _persist();
     notifyListeners();

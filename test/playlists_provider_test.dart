@@ -36,6 +36,13 @@ void main() {
       expect(() => p.create(' A '), throwsArgumentError);
     });
 
+    test('连续创建的歌单 id 互不相同', () async {
+      final p = PlaylistsProvider(storage);
+      final a = await p.create('A');
+      final b = await p.create('B');
+      expect(a.id, isNot(b.id));
+    });
+
     test('rename 校验空名和重名', () async {
       final p = PlaylistsProvider(storage);
       final a = await p.create('A');
